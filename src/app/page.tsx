@@ -1,6 +1,6 @@
 import Header from "@/components/layout/Header";
 import Hero from "@/components/sections/Hero";
-import Stats from "@/components/sections/Stats";
+// import Stats from "@/components/sections/Stats";
 import Features from "@/components/sections/Features";
 import HowItWorks from "@/components/sections/HowItWorks";
 import Testimonials from "@/components/sections/Testimonials";
@@ -14,7 +14,7 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
-        <Stats />
+        {/* <Stats /> */}
         <Features />
         <HowItWorks />
         <Testimonials />
