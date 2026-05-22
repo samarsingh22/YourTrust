@@ -232,12 +232,20 @@ Conversation behavior rules for the AI:
       // Just log it and continue
     }
 
-    // Log the AI call request in the agreement's timeline
-    agreement.timeline.push({
+    // Log the AI call request in the agreement's timeline — insert before terminal event
+    const callTerminalIdx = agreement.timeline.findIndex(
+      (t: any) => t.event === 'Payment Received' || t.event === 'Asset Returned'
+    )
+    const aiCallEvent = {
       event: 'AI Mediator Call Requested',
       date: new Date(),
       completed: true,
-    });
+    }
+    if (callTerminalIdx !== -1) {
+      agreement.timeline.splice(callTerminalIdx, 0, aiCallEvent)
+    } else {
+      agreement.timeline.push(aiCallEvent)
+    }
 
     // Add system message to aiMessages
     const triggerText = triggeredBy === 'lender' ? 'lender' : 'borrower';

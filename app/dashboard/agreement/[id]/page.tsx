@@ -442,21 +442,19 @@ const handleStrictModeToggle = async (checked: boolean) => {
     if (!confirm(confirmMsg)) return
     setIsConfirmingReceipt(true)
     try {
+      const updatedTimeline = agreement.timeline.map((item: { event: string; date: Date | null; completed: boolean }) => {
+        const targetEvent = agreement.dealType === 'asset' ? 'Asset Returned' : 'Payment Received'
+        if (item.event === targetEvent) {
+          return { ...item, date: new Date().toISOString(), completed: true }
+        }
+        return item
+      })
       const res = await fetch(`/api/agreements/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "settled",
-          timeline: [
-            ...agreement.timeline,
-            {
-              event: agreement.dealType === 'asset'
-                ? `Lender ${agreement.lenderName} confirmed asset return — Agreement settled`
-                : `Lender ${agreement.lenderName} confirmed receipt — Agreement settled`,
-              date: new Date().toISOString(),
-              completed: true,
-            },
-          ],
+          timeline: updatedTimeline,
         }),
       })
       if (res.ok) {
@@ -762,52 +760,65 @@ const handleStrictModeToggle = async (checked: boolean) => {
       </div>
 
       {/* Timeline */}
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Timeline</h2>
-        <div className="space-y-4">
-          {agreement.timeline.map((item: { event: string; date: Date | null; completed: boolean }, index: number) => (
-            <div key={`${item.event}-${index}`} className="flex items-start gap-4">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full ${item.completed
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground"
-                    }`}
-                >
-                  {item.completed ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Clock className="h-4 w-4" />
-                  )}
+      {(() => {
+        const sortedTimeline = [...(agreement.timeline || [])]
+        // Move the terminal event (Payment Received / Asset Returned) to the bottom always
+        const terminalIdx = sortedTimeline.findIndex(
+          (t: any) => t.event === 'Payment Received' || t.event === 'Asset Returned'
+        )
+        if (terminalIdx !== -1) {
+          const [terminal] = sortedTimeline.splice(terminalIdx, 1)
+          sortedTimeline.push(terminal)
+        }
+        return (
+          <div className="mb-6 rounded-xl border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold mb-4">Timeline</h2>
+            <div className="space-y-4">
+              {sortedTimeline.map((item: { event: string; date: Date | null; completed: boolean }, index: number) => (
+                <div key={`${item.event}-${index}`} className="flex items-start gap-4">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${item.completed
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground"
+                        }`}
+                    >
+                      {item.completed ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Clock className="h-4 w-4" />
+                      )}
+                    </div>
+                    {index < sortedTimeline.length - 1 && (
+                      <div
+                        className={`w-0.5 h-8 mt-2 ${item.completed ? "bg-primary" : "bg-border"
+                          }`}
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 pb-2">
+                    <div
+                      className={`font-medium ${item.completed ? "text-foreground" : "text-muted-foreground"
+                        }`}
+                    >
+                      {item.event}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {item.date
+                        ? new Date(item.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                        : "Pending"}
+                    </div>
+                  </div>
                 </div>
-                {index < agreement.timeline.length - 1 && (
-                  <div
-                    className={`w-0.5 h-8 mt-2 ${item.completed ? "bg-primary" : "bg-border"
-                      }`}
-                  />
-                )}
-              </div>
-              <div className="flex-1 pb-2">
-                <div
-                  className={`font-medium ${item.completed ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                >
-                  {item.event}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {item.date
-                    ? new Date(item.date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                    : "Pending"}
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        )
+      })()}
 
       {/* AI Repayment Plan */}
       <div className="mb-6 rounded-xl border border-border bg-card p-6">

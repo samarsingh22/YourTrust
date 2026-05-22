@@ -69,12 +69,20 @@ export async function POST(
     agreement.dueDate = newDueDate;
     agreement.bufferDays = remainingBufferDays;
 
-    // Add timeline event
-    agreement.timeline.push({
+    // Add timeline event — insert before the terminal Payment Received / Asset Returned
+    const terminalIdx = agreement.timeline.findIndex(
+      (t: any) => t.event === 'Payment Received' || t.event === 'Asset Returned'
+    )
+    const extensionEvent = {
       event: `Due date extended by ${extensionDays} day(s)`,
       date: new Date(),
       completed: true,
-    });
+    }
+    if (terminalIdx !== -1) {
+      agreement.timeline.splice(terminalIdx, 0, extensionEvent)
+    } else {
+      agreement.timeline.push(extensionEvent)
+    }
 
     // Add system message to chat
     agreement.aiMessages.push({

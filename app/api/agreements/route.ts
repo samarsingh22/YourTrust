@@ -125,11 +125,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create timeline
+    const isMoney = dealType === 'money'
     const timeline = [
       { event: 'Agreement Created', date: new Date(), completed: true },
       { event: 'Witness Approved', date: witnessEmail ? null : new Date(), completed: !witnessEmail },
-      { event: dealType === 'money' ? 'Money Sent' : 'Asset Delivered', date: proofFile ? new Date() : null, completed: !!proofFile },
-      { event: dealType === 'money' ? 'Payment Received' : 'Asset Returned', date: null, completed: false },
+      { event: isMoney ? 'Money Sent' : 'Asset Delivered', date: isMoney ? new Date() : (proofFile ? new Date() : null), completed: isMoney ? true : !!proofFile },
+      { event: isMoney ? 'Payment Received' : 'Asset Returned', date: null, completed: false },
     ];
 
     // NEAR AI Trust Score Analysis with Full History

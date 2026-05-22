@@ -240,11 +240,20 @@ What would you like to do?`,
       const daysExtended = aiResponse.actionDetails.daysExtended || requestedDays;
 
       agreement.dueDate = newDueDate;
-      agreement.timeline.push({
+      // Insert before terminal Payment Received / Asset Returned
+      const negoTerminalIdx = agreement.timeline.findIndex(
+        (t: any) => t.event === 'Payment Received' || t.event === 'Asset Returned'
+      )
+      const negoExtensionEvent = {
         event: `Due date extended by ${daysExtended} day${daysExtended > 1 ? 's' : ''} to ${newDueDate.toLocaleDateString()} by ${agreement.borrowerName}`,
         date: new Date(),
         completed: true,
-      });
+      }
+      if (negoTerminalIdx !== -1) {
+        agreement.timeline.splice(negoTerminalIdx, 0, negoExtensionEvent)
+      } else {
+        agreement.timeline.push(negoExtensionEvent)
+      }
       
       actionResult = {
         success: true,
