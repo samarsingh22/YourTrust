@@ -42,7 +42,7 @@ export default function NegotiatePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [actionResult, setActionResult] = useState<any>(null);
   const [userRole, setUserRole] = useState<'borrower' | 'lender' | null>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -66,25 +66,25 @@ export default function NegotiatePage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setMessages(data.messages || []);
         setAgreementContext(data.agreementContext);
-        
+
         // Determine user role
         if (user?.uid === data.agreementContext.borrowerId) {
           setUserRole('borrower');
         } else if (user?.uid === data.agreementContext.lenderId) {
           setUserRole('lender');
         }
-        
+
         // Add welcome message if no messages yet
         if (!data.messages || data.messages.length === 0) {
           const role = user?.uid === data.agreementContext.borrowerId ? 'borrower' : 'lender';
-          const welcomeMsg = role === 'borrower' 
+          const welcomeMsg = role === 'borrower'
             ? 'Welcome! I can help you negotiate payment terms, extend deadlines, and answer questions about your agreement.'
             : 'Welcome! I can provide insights about the borrower, suggest collection strategies, and help you make informed decisions.';
-          
+
           setMessages([{
             role: 'system',
             content: welcomeMsg,
@@ -139,14 +139,14 @@ export default function NegotiatePage() {
         // Show action result if any
         if (data.actionResult) {
           setActionResult(data.actionResult);
-          
+
           // Reload agreement context if deadline was extended
           if (data.actionResult.success && data.agreement) {
             setAgreementContext(prev => prev ? {
               ...prev,
               dueDate: data.agreement.dueDate,
             } : null);
-            
+
             // If extension was successful, show success message
             if (data.actionResult.shouldClose) {
               setTimeout(() => {
@@ -224,7 +224,7 @@ export default function NegotiatePage() {
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  {userRole === 'borrower' 
+                  {userRole === 'borrower'
                     ? 'Negotiate terms, extend deadlines, and get payment advice'
                     : 'Get borrower insights, risk assessment, and collection strategies'}
                   <span className="block text-xs mt-1 ">
@@ -241,7 +241,7 @@ export default function NegotiatePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Amount</p>
-                <p className="font-semibold">{agreementContext.amount.toLocaleString()} KRW</p>
+                <p className="font-semibold">{agreementContext.amount.toLocaleString()} ₹</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Due Date</p>
@@ -283,14 +283,12 @@ export default function NegotiatePage() {
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`flex gap-3 ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 {msg.role !== 'user' && (
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    msg.role === 'ai' ? 'bg-primary/20' : 'bg-secondary'
-                  }`}>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === 'ai' ? 'bg-primary/20' : 'bg-secondary'
+                    }`}>
                     {msg.role === 'ai' ? (
                       <Bot className="h-4 w-4 text-primary" />
                     ) : (
@@ -298,22 +296,20 @@ export default function NegotiatePage() {
                     )}
                   </div>
                 )}
-                
+
                 <div
-                  className={`max-w-[70%] rounded-lg p-3 ${
-                    msg.role === 'user'
+                  className={`max-w-[70%] rounded-lg p-3 ${msg.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : msg.role === 'ai'
-                      ? 'bg-card text-foreground border border-border'
-                      : 'bg-muted text-foreground'
-                  }`}
+                        ? 'bg-card text-foreground border border-border'
+                        : 'bg-muted text-foreground'
+                    }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">
                     {msg.content.replace(/^\[(BORROWER|LENDER)\]\s*/, '')}
                   </p>
-                  <p className={`text-xs mt-1 ${
-                    msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                  }`}>
+                  <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                    }`}>
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
@@ -325,7 +321,7 @@ export default function NegotiatePage() {
                 )}
               </div>
             ))}
-            
+
             {loading && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -342,7 +338,7 @@ export default function NegotiatePage() {
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -369,7 +365,7 @@ export default function NegotiatePage() {
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t">
               <p className="text-xs text-muted-foreground">
-                {userRole === 'borrower' 
+                {userRole === 'borrower'
                   ? '💡 Try: "Can I extend the deadline by 5 days?" or "What installment plans are available?"'
                   : '💡 Try: "Is this borrower reliable?" or "What\'s the best way to approach them for payment?"'}
               </p>

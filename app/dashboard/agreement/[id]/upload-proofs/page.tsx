@@ -38,7 +38,7 @@ export default function UploadProofsPage({
   const searchParams = useSearchParams()
   const { id } = use(params)
   const planIndex = searchParams.get("plan")
-  
+
   const [agreement, setAgreement] = useState<any>(null)
   const [installments, setInstallments] = useState<Installment[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,7 +67,7 @@ export default function UploadProofsPage({
 
       if (response.ok) {
         setAgreement(data.agreement)
-        
+
         // If plan is already selected and saved in DB, load it
         if (data.agreement.selectedInstallmentPlan) {
           console.log('Loading existing plan from database')
@@ -75,17 +75,17 @@ export default function UploadProofsPage({
         } else {
           // Try to get plan from sessionStorage (just selected)
           const storedPlanData = sessionStorage.getItem('selectedInstallmentPlan')
-          
+
           if (storedPlanData) {
             console.log('Loading plan from sessionStorage and saving to database')
             const { planIndex: storedPlanIndex, plan } = JSON.parse(storedPlanData)
-            
+
             // Save plan to database first
             await savePlanToDatabase(storedPlanIndex, plan)
-            
+
             // Clear sessionStorage
             sessionStorage.removeItem('selectedInstallmentPlan')
-            
+
             // Set installments
             setInstallments(plan.installments.map((inst: any) => ({
               ...inst,
@@ -150,28 +150,28 @@ export default function UploadProofsPage({
         console.error("Failed to save plan to database:", result)
         throw new Error(result.error || 'Failed to save plan')
       }
-      
+
       console.log('Plan saved successfully to database')
-      
+
       // Wait and then verify the plan was actually saved by fetching again
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // Fetch agreement again to verify plan is saved
       const verifyResponse = await fetch(`/api/agreements/${id}`)
       const verifyData = await verifyResponse.json()
-      
+
       if (!verifyData.agreement?.selectedInstallmentPlan) {
         console.error('Plan not found after save, retrying...')
         // Wait a bit more and try one more time
         await new Promise(resolve => setTimeout(resolve, 1000))
         const retryResponse = await fetch(`/api/agreements/${id}`)
         const retryData = await retryResponse.json()
-        
+
         if (!retryData.agreement?.selectedInstallmentPlan) {
           throw new Error('Plan failed to save to database')
         }
       }
-      
+
       console.log('Plan verified in database')
     } catch (error) {
       console.error("Error saving plan:", error)
@@ -183,17 +183,17 @@ export default function UploadProofsPage({
     try {
       // Import the generate function
       const { generateInstallmentPlans } = await import("@/app/actions/generate-installment-plan")
-      
+
       const result = await generateInstallmentPlans(
         agreementData.amount,
-        "KRW",
+        "₹",
         agreementData.dueDate,
         agreementData.borrowerName
       )
 
       if (result.plans && result.plans[selectedPlanIndex]) {
         const selectedPlan = result.plans[selectedPlanIndex]
-        
+
         // Save plan to agreement
         const saveResponse = await fetch(`/api/agreements/${id}/save-plan`, {
           method: "POST",
@@ -266,14 +266,14 @@ export default function UploadProofsPage({
       if (response.ok) {
         console.log('Upload successful:', data)
         // Update local state
-        setInstallments(prev => prev.map((inst, i) => 
-          i === index 
-            ? { 
-                ...inst, 
-                proofUploaded: true, 
-                proofUrl: data.proofUrl,
-                proofFileName: file.name,
-              }
+        setInstallments(prev => prev.map((inst, i) =>
+          i === index
+            ? {
+              ...inst,
+              proofUploaded: true,
+              proofUrl: data.proofUrl,
+              proofFileName: file.name,
+            }
             : inst
         ))
 
@@ -310,14 +310,14 @@ export default function UploadProofsPage({
       })
 
       if (response.ok) {
-        setInstallments(prev => prev.map((inst, i) => 
-          i === index 
-            ? { 
-                ...inst, 
-                proofUploaded: false, 
-                proofUrl: undefined,
-                proofFileName: undefined,
-              }
+        setInstallments(prev => prev.map((inst, i) =>
+          i === index
+            ? {
+              ...inst,
+              proofUploaded: false,
+              proofUrl: undefined,
+              proofFileName: undefined,
+            }
             : inst
         ))
 
@@ -373,7 +373,7 @@ export default function UploadProofsPage({
             <span className="text-primary">{uploadedCount} / {installments.length}</span>
           </CardTitle>
           <CardDescription>
-            {allProofsUploaded 
+            {allProofsUploaded
               ? "All payment proofs uploaded! You can now submit for review."
               : `Upload ${installments.length - uploadedCount} more proof${installments.length - uploadedCount !== 1 ? 's' : ''} to complete.`
             }
@@ -392,13 +392,12 @@ export default function UploadProofsPage({
       {/* Installments Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {installments.map((installment, index) => (
-          <Card 
+          <Card
             key={index}
-            className={`relative transition-all ${
-              installment.proofUploaded 
-                ? "border-green-500/50 bg-green-500/5" 
+            className={`relative transition-all ${installment.proofUploaded
+                ? "border-green-500/50 bg-green-500/5"
                 : "border-border"
-            }`}
+              }`}
           >
             {installment.proofUploaded && (
               <div className="absolute top-2 right-2 z-10">
@@ -407,7 +406,7 @@ export default function UploadProofsPage({
                 </div>
               </div>
             )}
-            
+
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">

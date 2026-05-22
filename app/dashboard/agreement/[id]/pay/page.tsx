@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -59,6 +59,9 @@ export default function PaymentPage({
 
   // Copy UPI ID feedback
   const [copiedUpiId, setCopiedUpiId] = useState("")
+
+  // Check if we're paying a specific installment
+  const installmentIndex = useSearchParams().get("installment")
 
   // Auth
   useEffect(() => {
@@ -159,37 +162,64 @@ export default function PaymentPage({
 
       const utrNote = utrNumber.trim() ? ` (UTR/Ref: ${utrNumber.trim()})` : ""
 
-      // 3. PATCH agreement: status → reviewing, save borrowerProof, update timeline
-      const patchRes = await fetch(`/api/agreements/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "reviewing",
-          borrowerProof: {
+      if (installmentIndex !== null) {
+        // --- Installment flow: mark specific installment as paid ---
+        const payRes = await fetch(`/api/agreements/${id}/pay-installment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            installmentIndex: Number(installmentIndex),
+            paymentMethod: "upload",
             fileName: proofFile.name,
             fileUrl: uploadData.fileUrl,
-            uploadedAt: new Date().toISOString(),
-          },
-          timeline: [
-            ...agreement.timeline,
-            {
-              event: `Payment proof submitted via ${methodLabel}${utrNote}`,
-              date: new Date().toISOString(),
-              completed: true,
+            utrNumber: utrNumber.trim(),
+          }),
+        })
+        if (!payRes.ok) {
+          const payData = await payRes.json()
+          throw new Error(payData.error || "Failed to mark installment as paid")
+        }
+
+        setSubmitDone(true)
+        toast({
+          title: `Installment ${Number(installmentIndex) + 1} Paid!`,
+          description: `Proof submitted. Redirecting to installment page...`,
+        })
+
+        setTimeout(() => router.push(`/dashboard/agreement/${id}/installment-payment?marked=${installmentIndex}`), 2000)
+      } else {
+        // --- Normal flow: update agreement to reviewing ---
+        const patchRes = await fetch(`/api/agreements/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "reviewing",
+            borrowerProof: {
+              fileName: proofFile.name,
+              fileUrl: uploadData.fileUrl,
+              uploadedAt: new Date().toISOString(),
             },
-          ],
-        }),
-      })
+            timeline: [
+              ...agreement.timeline,
+              {
+                event: `Payment proof submitted via ${methodLabel}${utrNote}`,
+                date: new Date().toISOString(),
+                completed: true,
+              },
+            ],
+          }),
+        })
 
-      if (!patchRes.ok) throw new Error("Failed to update agreement")
+        if (!patchRes.ok) throw new Error("Failed to update agreement")
 
-      setSubmitDone(true)
-      toast({
-        title: "Proof Submitted!",
-        description: `Waiting for ${agreement.lenderName} to confirm receipt.`,
-      })
+        setSubmitDone(true)
+        toast({
+          title: "Proof Submitted!",
+          description: `Waiting for ${agreement.lenderName} to confirm receipt.`,
+        })
 
-      setTimeout(() => router.push(`/dashboard/agreement/${id}`), 2000)
+        setTimeout(() => router.push(`/dashboard/agreement/${id}`), 2000)
+      }
     } catch (err: any) {
       toast({ title: "Submission Failed", description: err.message, variant: "destructive" })
     } finally {
@@ -222,8 +252,8 @@ export default function PaymentPage({
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold">Pay & Close</h1>
-          <p className="text-sm text-muted-foreground">Repayment to {agreement.lenderName}</p>
+          <h1 className="text-xl font-bold">{installmentIndex !== null ? `Installment ${Number(installmentIndex) + 1} Payment` : "Pay & Close"}</h1>
+          <p className="text-sm text-muted-foreground">{installmentIndex !== null ? `Installment ${Number(installmentIndex) + 1} of ${agreement.selectedInstallmentPlan?.installments?.length || '?'}` : `Repayment to ${agreement.lenderName}`}</p>
         </div>
       </div>
 

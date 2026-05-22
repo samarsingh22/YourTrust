@@ -60,30 +60,30 @@ export interface CreditReport {
 export async function getUserCreditHistory(userId: string, userEmail: string): Promise<CreditHistory | null> {
   try {
     await connectDB();
-    
+
     const agreements = await Agreement.find({
       $or: [
         { borrowerId: userId },
         { borrowerEmail: userEmail }
       ]
     });
-    
+
     if (!agreements || agreements.length === 0) {
       return null;
     }
-    
+
     let onTimeCount = 0;
     let lateCount = 0;
     let earlyCount = 0;
     let totalAmount = 0;
     let witnessCount = 0;
-    
+
     for (const agreement of agreements) {
       totalAmount += agreement.amount || 0;
-      
+
       if (agreement.status === 'settled') {
         const dueDate = new Date(agreement.dueDate);
-        
+
         if (agreement.borrowerProof?.uploadedAt) {
           const proofDate = new Date(agreement.borrowerProof.uploadedAt);
           if (proofDate <= dueDate) {
@@ -100,15 +100,15 @@ export async function getUserCreditHistory(userId: string, userEmail: string): P
           }
         }
       }
-      
+
       if (agreement.witnessName) {
         witnessCount++;
       }
     }
-    
+
     const total = agreements.length;
     const completed = onTimeCount + lateCount + earlyCount;
-    
+
     return {
       totalAgreements: total,
       onTimeRate: completed > 0 ? Math.round((onTimeCount / completed) * 100) : 0,
@@ -128,11 +128,11 @@ export async function getUserTrustScore(userId: string, userEmail: string): Prom
   try {
     await connectDB();
     const user = await User.findOne({ $or: [{ uid: userId }, { email: userEmail }] });
-    
+
     if (!user || user.trustScore === undefined) {
       return 75;
     }
-    
+
     return user.trustScore || 75;
   } catch (error: any) {
     console.error('[NEAR AI] Error fetching trust score:', error.message);
@@ -170,8 +170,8 @@ Borrower Credit History:
 - On-time Payment Rate: ${borrowerHistory.onTimeRate}%
 - Late Payments: ${borrowerHistory.lateCount}
 - Early Payments: ${borrowerHistory.earlyCount}
-- Total Borrowed: ${borrowerHistory.totalAmount} KRW
-- Average Amount: ${borrowerHistory.avgAmount} KRW
+- Total Borrowed: ${borrowerHistory.totalAmount} ₹
+- Average Amount: ${borrowerHistory.avgAmount} ₹
 - Witness Involvement: ${borrowerHistory.witnessInvolvementCount} times
 - Current Trust Score: ${borrowerTrustScore}` : `
 Borrower Credit History: New user, no past agreements`;
@@ -179,8 +179,8 @@ Borrower Credit History: New user, no past agreements`;
     const lenderHistoryText = lenderHistory ? `
 Lender Credit History:
 - Total Past Agreements: ${lenderHistory.totalAgreements}
-- Average Lending Amount: ${lenderHistory.avgAmount} KRW
-- Total Lent: ${lenderHistory.totalAmount} KRW
+- Average Lending Amount: ${lenderHistory.avgAmount} ₹
+- Total Lent: ${lenderHistory.totalAmount} ₹
 - Witness Involvement: ${lenderHistory.witnessInvolvementCount} times
 - Current Trust Score: ${lenderTrustScore}` : `
 Lender Credit History: New user, no past agreements`;
@@ -190,7 +190,7 @@ Lender Credit History: New user, no past agreements`;
 Analyze this lending agreement with FULL context from both parties' history.
 
 Current Agreement:
-- Amount: ${amount} KRW
+- Amount: ${amount} ₹
 - Borrower: ${borrowerName}
 - Purpose: ${purpose || 'Not specified'}
 - Due Date: ${dueDate}
@@ -241,7 +241,7 @@ Example: {
 }`;
 
     const startTime = Date.now();
-    
+
     const response = await nearAI.chat.completions.create({
       model: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
       messages: [{ role: 'user', content: prompt }],
@@ -259,14 +259,14 @@ Example: {
     }
 
     const parsed = JSON.parse(content);
-    
+
     console.log('[NEAR AI] Analysis complete:', {
       trustScore: parsed.trustScore,
       riskLevel: parsed.riskLevel,
       confidence: parsed.confidence,
       processingTime: `${processingTime}ms`,
     });
-    
+
     return {
       trustScore: parsed.trustScore || 'medium',
       riskLevel: parsed.riskLevel || 50,
@@ -319,10 +319,10 @@ function getFallbackTrustScore(amount: number, purpose: string, borrowerHistory:
   const purposeLower = (purpose || '').toLowerCase();
   const isEmergency = purposeLower.includes('emergency') || purposeLower.includes('medical');
   const isLargeAmount = amount > 500000;
-  
+
   let riskLevel = 30;
   let trustScore: 'high' | 'medium' | 'low' = 'high';
-  
+
   if (borrowerHistory) {
     if (borrowerHistory.onTimeRate < 50) {
       riskLevel = 70;
@@ -335,17 +335,17 @@ function getFallbackTrustScore(amount: number, purpose: string, borrowerHistory:
     riskLevel = 50;
     trustScore = 'medium';
   }
-  
+
   if (isEmergency && trustScore === 'high') {
     riskLevel = Math.min(riskLevel + 15, 85);
   }
-  
+
   return {
     trustScore,
     riskLevel,
-    suggestedStrategy: trustScore === 'low' 
-      ? 'Require collateral or co-signer, consider partial payment first' 
-      : isEmergency 
+    suggestedStrategy: trustScore === 'low'
+      ? 'Require collateral or co-signer, consider partial payment first'
+      : isEmergency
         ? 'Allow flexible payment terms, check in regularly'
         : 'Standard repayment terms',
     analyzedAt: new Date(),
@@ -434,7 +434,7 @@ Borrower Context: New user`;
 Generate the optimal approach for a collection call using real borrower history.
 
 Current Situation:
-- Amount Owed: ${amount} KRW
+- Amount Owed: ${amount} ₹
 - Days Overdue: ${daysOverdue}
 - Due Date: ${dueDate}
 - Current Status: ${currentStatus}
@@ -469,7 +469,7 @@ Respond with ONLY JSON:
     }
 
     const parsed = JSON.parse(content);
-    
+
     return {
       tone: parsed.tone || baseTone,
       messageIntent: parsed.messageIntent || intent,
@@ -490,7 +490,7 @@ function getFallbackMediationStrategy(
 ): MediationStrategy {
   let tone: 'friendly' | 'neutral' | 'strict' = 'friendly';
   let messageIntent: 'reminder' | 'warning' | 'escalation' = 'reminder';
-  
+
   if (history && history.onTimeRate < 50) {
     tone = 'strict';
     messageIntent = 'escalation';

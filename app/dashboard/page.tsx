@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Users,
   ChevronDown,
+  Eye,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { auth } from "@/firebase"
@@ -237,6 +238,37 @@ export default function DashboardPage() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Role Filter Buttons */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <Link href="/dashboard/borrower">
+          <Button
+            variant="outline"
+            className="w-full h-14 flex flex-col items-center justify-center gap-1 border-orange/30 text-orange hover:bg-orange/5 hover:text-orange"
+          >
+            <ArrowDownLeft className="h-5 w-5" />
+            <span className="text-xs font-semibold">Borrower</span>
+          </Button>
+        </Link>
+        <Link href="/dashboard/lender">
+          <Button
+            variant="outline"
+            className="w-full h-14 flex flex-col items-center justify-center gap-1 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+          >
+            <ArrowUpRight className="h-5 w-5" />
+            <span className="text-xs font-semibold">Lender</span>
+          </Button>
+        </Link>
+        <Link href="/dashboard/witness">
+          <Button
+            variant="outline"
+            className="w-full h-14 flex flex-col items-center justify-center gap-1 border-chart-3/30 text-chart-3 hover:bg-chart-3/5 hover:text-chart-3"
+          >
+            <Eye className="h-5 w-5" />
+            <span className="text-xs font-semibold">Witness</span>
+          </Button>
+        </Link>
       </div>
 
       {/* Create Agreement Button */}

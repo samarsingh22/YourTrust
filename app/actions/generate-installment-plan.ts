@@ -24,7 +24,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 function validateInstallmentDates(plans: InstallmentPlan[], dueDate: string): boolean {
     const dueDateObj = new Date(dueDate)
     dueDateObj.setHours(23, 59, 59, 999) // End of due date
-    
+
     for (const plan of plans) {
         for (const installment of plan.installments) {
             const installmentDate = new Date(installment.date)
@@ -41,29 +41,29 @@ function validateInstallmentDates(plans: InstallmentPlan[], dueDate: string): bo
 function fixInstallmentDates(plans: InstallmentPlan[], dueDate: string): InstallmentPlan[] {
     const dueDateObj = new Date(dueDate)
     const today = new Date()
-    
+
     return plans.map(plan => {
         const fixedInstallments = plan.installments.map((installment, index) => {
             const installmentDate = new Date(installment.date)
-            
+
             // If installment date is after due date, recalculate
             if (installmentDate > dueDateObj) {
                 // Distribute installments evenly between today and due date
                 const totalInstallments = plan.installments.length
                 const timeSpan = dueDateObj.getTime() - today.getTime()
                 const intervalMs = timeSpan / (totalInstallments + 1)
-                
+
                 const newDate = new Date(today.getTime() + (intervalMs * (index + 1)))
-                
+
                 return {
                     ...installment,
                     date: newDate.toISOString().split('T')[0]
                 }
             }
-            
+
             return installment
         })
-        
+
         return {
             ...plan,
             installments: fixedInstallments
@@ -73,7 +73,7 @@ function fixInstallmentDates(plans: InstallmentPlan[], dueDate: string): Install
 
 export async function generateInstallmentPlans(
     amount: number,
-    currency: string = "KRW",
+    currency: string = "₹",
     dueDate: string,
     borrowerName: string = "Borrower"
 ): Promise<{ plans?: InstallmentPlan[]; error?: string }> {
@@ -88,7 +88,7 @@ export async function generateInstallmentPlans(
         "gemini-2.5-flash",       // Good free tier: 10 RPM, 250 RPD
         "gemini-1.5-flash"        // Fallback: stable model
     ];
-    
+
     let modelName = freeModels[0];
 
     // Calculate days until due date
@@ -166,7 +166,7 @@ export async function generateInstallmentPlans(
     for (let modelIndex = 0; modelIndex < freeModels.length; modelIndex++) {
         modelName = freeModels[modelIndex];
         console.log(`[GeneratePlans] Trying model: ${modelName}`);
-        
+
         try {
             const model = genAI.getGenerativeModel({
                 model: modelName,
@@ -179,7 +179,7 @@ export async function generateInstallmentPlans(
 
             // Retry Logic with Exponential Backoff per model
             const retries = 1; // Reduce retries, try next model faster
-            
+
             for (let i = 0; i < retries; i++) {
                 try {
                     console.log(`[GeneratePlans] Model ${modelName} - Attempt ${i + 1}/${retries}`);
@@ -192,16 +192,16 @@ export async function generateInstallmentPlans(
 
                     try {
                         let plans = JSON.parse(text) as InstallmentPlan[];
-                        
+
                         // Validate that all installment dates are before due date
                         const isValid = validateInstallmentDates(plans, dueDate)
-                        
+
                         if (!isValid) {
                             console.warn(`[GeneratePlans] AI generated dates beyond due date. Fixing...`)
                             plans = fixInstallmentDates(plans, dueDate)
                             console.log(`[GeneratePlans] Dates fixed to respect due date: ${dueDate}`)
                         }
-                        
+
                         return { plans };
                     } catch (parseError) {
                         console.error(`[GeneratePlans] JSON Parse error:`, parseError);
@@ -243,37 +243,37 @@ export async function generateInstallmentPlans(
 function generateSamplePlans(amount: number, currency: string, dueDate: string, daysUntilDue: number, monthsUntilDue: number): InstallmentPlan[] {
     const dueDateObj = new Date(dueDate);
     const plans: InstallmentPlan[] = [];
-    
+
     const planConfigs = [
         { name: 'Quick Payoff', description: 'Fast repayment with fewer installments', months: Math.max(2, Math.ceil(monthsUntilDue * 0.4)) },
         { name: 'Balanced Plan', description: 'Moderate payments over time', months: Math.max(3, Math.ceil(monthsUntilDue * 0.7)) },
         { name: 'Flexible Plan', description: 'Smaller payments spread longer', months: Math.max(4, monthsUntilDue) }
     ];
-    
+
     for (const config of planConfigs) {
         const months = Math.max(1, Math.min(config.months, Math.max(1, monthsUntilDue)));
         const amountPerMonth = Math.round(amount / months);
-        
+
         const installments: Installment[] = [];
         const startDate = new Date();
         startDate.setDate(startDate.getDate() + 7); // Start 7 days from now
-        
+
         for (let i = 0; i < months; i++) {
             const instDate = new Date(startDate);
             instDate.setMonth(instDate.getMonth() + i);
-            
+
             // Ensure date doesn't exceed due date
             if (instDate > dueDateObj) {
                 instDate.setTime(dueDateObj.getTime());
             }
-            
+
             installments.push({
                 date: instDate.toISOString().split('T')[0],
                 amount: i === months - 1 ? amount - (amountPerMonth * (months - 1)) : amountPerMonth,
                 note: `Installment ${i + 1} of ${months}`
             });
         }
-        
+
         plans.push({
             planName: config.name,
             description: config.description,
@@ -282,6 +282,6 @@ function generateSamplePlans(amount: number, currency: string, dueDate: string, 
             installments
         });
     }
-    
+
     return plans;
 }

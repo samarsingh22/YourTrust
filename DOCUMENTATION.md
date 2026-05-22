@@ -293,7 +293,7 @@ Respond with JSON:
 
 **Fallback**: If NEAR AI is unavailable, `getFallbackTrustScore()` provides deterministic analysis based on:
 - Purpose keywords (emergency/medical)
-- Amount thresholds (>500000 KRW)
+- Amount thresholds (>500000 ₹)
 - Borrower history on-time rate
 
 **Storage**: Results saved in agreement fields:
@@ -322,7 +322,7 @@ Respond with JSON:
 **Prompt Engineering**:
 ```typescript
 const prompt = `Generate 3 distinct installment repayment plans for a debt.
-- Amount: X KRW
+- Amount: X ₹
 - Due Date: Y
 - Days Until Due: Z days
 

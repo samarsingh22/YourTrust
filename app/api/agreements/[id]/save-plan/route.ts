@@ -14,7 +14,7 @@ export async function POST(
     console.log('=== Save Installment Plan Request ===');
     console.log('Agreement ID:', id);
 
-    const { planIndex, planName, installments } = body;
+    const { planIndex, planName, installments, status = 'pending' } = body;
 
     console.log('Plan:', planName, 'Index:', planIndex, 'Installments:', installments?.length);
 
@@ -40,6 +40,7 @@ export async function POST(
     agreement.selectedInstallmentPlan = {
       planIndex,
       planName,
+      status,
       installments: installments.map((inst: any) => ({
         date: inst.date,
         amount: inst.amount,

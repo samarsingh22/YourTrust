@@ -16,7 +16,7 @@ export async function POST(
   try {
     await connectDB();
     const { id } = await params;
-    
+
     const body = await request.json();
     const { message, userId } = body;
 
@@ -51,16 +51,16 @@ export async function POST(
     const today = new Date();
     const originalDueDate = new Date(agreement.createdDate || agreement.createdAt);
     originalDueDate.setDate(originalDueDate.getDate() + Math.ceil((new Date(agreement.dueDate).getTime() - originalDueDate.getTime()) / (1000 * 60 * 60 * 24)));
-    
+
     const dueDate = new Date(agreement.dueDate);
     const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     // Calculate how many buffer days have been used
     const totalBufferDays = agreement.bufferDays || 3;
-    const extensionEvents = agreement.timeline.filter((t: any) => 
+    const extensionEvents = agreement.timeline.filter((t: any) =>
       t.event && t.event.toLowerCase().includes('extended')
     );
-    
+
     // Calculate used buffer days from timeline
     let usedBufferDays = 0;
     extensionEvents.forEach((event: any) => {
@@ -69,14 +69,14 @@ export async function POST(
         usedBufferDays += parseInt(match[1]);
       }
     });
-    
+
     const remainingBufferDays = Math.max(0, totalBufferDays - usedBufferDays);
 
     // Check if user is asking to extend deadline
-    const isExtensionRequest = message.toLowerCase().includes('extend') || 
-                               message.toLowerCase().includes('more time') ||
-                               message.toLowerCase().includes('deadline');
-    
+    const isExtensionRequest = message.toLowerCase().includes('extend') ||
+      message.toLowerCase().includes('more time') ||
+      message.toLowerCase().includes('deadline');
+
     // Try multiple patterns to extract days
     let requestedDays = 0;
     const patterns = [
@@ -86,7 +86,7 @@ export async function POST(
       /by\s*(\d+)/i,              // "by 2"
       /^(\d+)$/                   // just "2"
     ];
-    
+
     for (const pattern of patterns) {
       const match = message.match(pattern);
       if (match) {
@@ -106,25 +106,25 @@ export async function POST(
     console.log('🔒 Security: Trusted Execution Environment (TEE)');
     console.log('👤 User Role:', userRole);
     console.log('💬 Message:', message);
-    console.log('📊 Context: Amount:', agreement.amount, 'KRW | Buffer Days:', remainingBufferDays);
+    console.log('📊 Context: Amount:', agreement.amount, '₹ | Buffer Days:', remainingBufferDays);
     console.log('⏳ Processing request...');
-    
+
     const startTime = Date.now();
-    
+
     // Try NEAR AI first
     try {
       const prompt = `You are a helpful AI for YourTrust lending platform. Respond with JSON only.
 
 User: ${userRole}
-Amount: ${agreement.amount} KRW
+Amount: ${agreement.amount} ₹
 Due: ${dueDate.toLocaleDateString()}
 Buffer Days Left: ${remainingBufferDays}
 Message: "${message}"
 
 ${isExtensionRequest && isBorrower && requestedDays > 0 && requestedDays <= remainingBufferDays
-  ? `Extend deadline by ${requestedDays} days. Respond: {"message": "I've extended your deadline by ${requestedDays} days", "action": "extend_deadline", "actionDetails": {"newDueDate": "${new Date(new Date(agreement.dueDate).getTime() + requestedDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}", "daysExtended": ${requestedDays}}}`
-  : 'Respond: {"message": "your helpful response", "action": "none"}'
-}`;
+          ? `Extend deadline by ${requestedDays} days. Respond: {"message": "I've extended your deadline by ${requestedDays} days", "action": "extend_deadline", "actionDetails": {"newDueDate": "${new Date(new Date(agreement.dueDate).getTime() + requestedDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}", "daysExtended": ${requestedDays}}}`
+          : 'Respond: {"message": "your helpful response", "action": "none"}'
+        }`;
 
       const response = await nearAI.chat.completions.create({
         model: 'anthropic/claude-sonnet-4-5',
@@ -134,7 +134,7 @@ ${isExtensionRequest && isBorrower && requestedDays > 0 && requestedDays <= rema
       });
 
       const aiContent = response.choices?.[0]?.message?.content?.trim();
-      
+
       if (aiContent) {
         // Try to parse JSON
         let cleanContent = aiContent;
@@ -142,7 +142,7 @@ ${isExtensionRequest && isBorrower && requestedDays > 0 && requestedDays <= rema
         if (jsonMatch) {
           cleanContent = jsonMatch[1];
         }
-        
+
         aiResponse = JSON.parse(cleanContent);
         usedNearAI = true;
         console.log('✅ NEAR AI response received successfully');
@@ -154,75 +154,75 @@ ${isExtensionRequest && isBorrower && requestedDays > 0 && requestedDays <= rema
       console.log('🔄 Using smart fallback system');
       usedNearAI = false;
     }
-    
+
     // If NEAR AI failed, use smart fallback
     if (!aiResponse) {
       // Smart fallback responses based on context
       if (isExtensionRequest && isBorrower && requestedDays > 0) {
-      if (remainingBufferDays === 0) {
+        if (remainingBufferDays === 0) {
+          aiResponse = {
+            message: `I'm sorry, but you've already used all ${totalBufferDays} buffer days. I cannot extend the deadline further. However, I can help you create an installment payment plan to make it easier to pay. Would you like that?`,
+            action: 'none'
+          };
+        } else if (requestedDays <= remainingBufferDays) {
+          const newDate = new Date(agreement.dueDate);
+          newDate.setDate(newDate.getDate() + requestedDays);
+
+          aiResponse = {
+            message: `Perfect! I've extended your deadline by ${requestedDays} day${requestedDays > 1 ? 's' : ''} to ${newDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. You now have ${remainingBufferDays - requestedDays} buffer day${remainingBufferDays - requestedDays !== 1 ? 's' : ''} remaining for future extensions if needed.`,
+            action: 'extend_deadline',
+            actionDetails: {
+              newDueDate: newDate.toISOString().split('T')[0],
+              reason: `Borrower requested ${requestedDays} day extension`,
+              daysExtended: requestedDays
+            }
+          };
+        } else {
+          aiResponse = {
+            message: `You only have ${remainingBufferDays} buffer day${remainingBufferDays !== 1 ? 's' : ''} remaining (you've already used ${usedBufferDays} out of ${totalBufferDays}). I can extend by ${remainingBufferDays} day${remainingBufferDays !== 1 ? 's' : ''} if that helps?`,
+            action: 'none'
+          };
+        }
+      } else if (isExtensionRequest && isBorrower && requestedDays === 0) {
+        if (remainingBufferDays === 0) {
+          aiResponse = {
+            message: `You've used all ${totalBufferDays} buffer days. I cannot extend further, but I can help you with an installment payment plan instead.`,
+            action: 'none'
+          };
+        } else {
+          aiResponse = {
+            message: `I can extend your deadline! You have ${remainingBufferDays} buffer day${remainingBufferDays !== 1 ? 's' : ''} remaining. How many days would you like to extend? (e.g., "extend by 2 days")`,
+            action: 'none'
+          };
+        }
+      } else if (isExtensionRequest && isLender) {
         aiResponse = {
-          message: `I'm sorry, but you've already used all ${totalBufferDays} buffer days. I cannot extend the deadline further. However, I can help you create an installment payment plan to make it easier to pay. Would you like that?`,
+          message: `Only ${agreement.borrowerName} (the borrower) can request deadline extensions. As the lender, I can provide you with insights about their payment history and reliability. Would you like to know more?`,
           action: 'none'
         };
-      } else if (requestedDays <= remainingBufferDays) {
-        const newDate = new Date(agreement.dueDate);
-        newDate.setDate(newDate.getDate() + requestedDays);
-        
+      } else if (message.toLowerCase().includes('payment') || message.toLowerCase().includes('installment')) {
         aiResponse = {
-          message: `Perfect! I've extended your deadline by ${requestedDays} day${requestedDays > 1 ? 's' : ''} to ${newDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. You now have ${remainingBufferDays - requestedDays} buffer day${remainingBufferDays - requestedDays !== 1 ? 's' : ''} remaining for future extensions if needed.`,
-          action: 'extend_deadline',
-          actionDetails: {
-            newDueDate: newDate.toISOString().split('T')[0],
-            reason: `Borrower requested ${requestedDays} day extension`,
-            daysExtended: requestedDays
-          }
+          message: `I can help you create a payment plan! You owe ${agreement.amount.toLocaleString()} ₹. I can break this into smaller installments. Go back to the agreement page and click "Generate Installment Plan" to see options.`,
+          action: 'none'
+        };
+      } else if (message.toLowerCase().includes('history') || message.toLowerCase().includes('record')) {
+        const onTimeRate = agreement.borrowerCreditReport?.onTimeRate || 100;
+        aiResponse = {
+          message: `Your payment history: ${agreement.borrowerCreditReport?.totalAgreements || 0} past agreements with ${onTimeRate}% on-time payment rate. Trust score: ${agreement.trustScore}/100. ${onTimeRate >= 80 ? "You have a good track record!" : "Building a better payment history will improve your trust score."}`,
+          action: 'none'
         };
       } else {
         aiResponse = {
-          message: `You only have ${remainingBufferDays} buffer day${remainingBufferDays !== 1 ? 's' : ''} remaining (you've already used ${usedBufferDays} out of ${totalBufferDays}). I can extend by ${remainingBufferDays} day${remainingBufferDays !== 1 ? 's' : ''} if that helps?`,
-          action: 'none'
-        };
-      }
-    } else if (isExtensionRequest && isBorrower && requestedDays === 0) {
-      if (remainingBufferDays === 0) {
-        aiResponse = {
-          message: `You've used all ${totalBufferDays} buffer days. I cannot extend further, but I can help you with an installment payment plan instead.`,
-          action: 'none'
-        };
-      } else {
-        aiResponse = {
-          message: `I can extend your deadline! You have ${remainingBufferDays} buffer day${remainingBufferDays !== 1 ? 's' : ''} remaining. How many days would you like to extend? (e.g., "extend by 2 days")`,
-          action: 'none'
-        };
-      }
-    } else if (isExtensionRequest && isLender) {
-      aiResponse = {
-        message: `Only ${agreement.borrowerName} (the borrower) can request deadline extensions. As the lender, I can provide you with insights about their payment history and reliability. Would you like to know more?`,
-        action: 'none'
-      };
-    } else if (message.toLowerCase().includes('payment') || message.toLowerCase().includes('installment')) {
-      aiResponse = {
-        message: `I can help you create a payment plan! You owe ${agreement.amount.toLocaleString()} KRW. I can break this into smaller installments. Go back to the agreement page and click "Generate Installment Plan" to see options.`,
-        action: 'none'
-      };
-    } else if (message.toLowerCase().includes('history') || message.toLowerCase().includes('record')) {
-      const onTimeRate = agreement.borrowerCreditReport?.onTimeRate || 100;
-      aiResponse = {
-        message: `Your payment history: ${agreement.borrowerCreditReport?.totalAgreements || 0} past agreements with ${onTimeRate}% on-time payment rate. Trust score: ${agreement.trustScore}/100. ${onTimeRate >= 80 ? "You have a good track record!" : "Building a better payment history will improve your trust score."}`,
-        action: 'none'
-      };
-    } else {
-      aiResponse = {
-        message: `Hi! I'm here to help. You can ask me to:
+          message: `Hi! I'm here to help. You can ask me to:
 • Extend your deadline (${remainingBufferDays} buffer day${remainingBufferDays !== 1 ? 's' : ''} remaining)
 • Create an installment payment plan
 • Check your payment history
 • Answer questions about your agreement
 
 What would you like to do?`,
-        action: 'none'
-      };
-    }
+          action: 'none'
+        };
+      }
     } // End of if (!aiResponse) fallback block
 
     // Save AI response
@@ -254,7 +254,7 @@ What would you like to do?`,
       } else {
         agreement.timeline.push(negoExtensionEvent)
       }
-      
+
       actionResult = {
         success: true,
         action: 'deadline_extended',
@@ -264,7 +264,7 @@ What would you like to do?`,
         message: `✅ Deadline extended successfully! New due date: ${newDueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
         shouldClose: true,
       };
-      
+
       // Add a system message about the extension
       agreement.aiMessages.push({
         role: 'system',
@@ -276,7 +276,7 @@ What would you like to do?`,
     await agreement.save();
 
     const processingTime = Date.now() - startTime;
-    
+
     console.log('✅ Response generated successfully');
     console.log('⚡ Processing time:', processingTime, 'ms');
     console.log('🔐 TEE Security: Active');
@@ -302,8 +302,8 @@ What would you like to do?`,
   } catch (error: any) {
     console.error('[AI Negotiation] Error:', error.message);
     return NextResponse.json(
-      { 
-        error: 'Failed to process', 
+      {
+        error: 'Failed to process',
         details: error.message,
         fallback: true,
         aiMessage: "I'm having trouble right now. Please try again.",

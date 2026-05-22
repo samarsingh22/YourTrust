@@ -14,27 +14,38 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const witnessEmail = searchParams.get('witnessEmail');
 
-    if (!userId) {
+    if (!userId && !witnessEmail) {
       return NextResponse.json(
-        { error: 'Missing userId parameter' },
+        { error: 'Missing userId or witnessEmail parameter' },
         { status: 400 }
       );
     }
 
-    // Find agreements where user is either lender or borrower
-    // Check both lenderId and borrowerId fields
-    const agreements = await Agreement.find({
-      $or: [
+    const orConditions: any[] = [];
+
+    if (userId) {
+      orConditions.push(
         { lenderId: userId },
         { borrowerId: userId },
-        { borrowerEmail: { $exists: true } } // Fallback for old agreements
-      ],
+      );
+    }
+
+    if (witnessEmail) {
+      orConditions.push({ witnessEmail });
+    }
+
+    // Find agreements where user is lender, borrower, or witness
+    const agreements = await Agreement.find({
+      $or: orConditions,
     }).sort({ createdAt: -1 });
 
     // Filter to only include agreements where user is actually involved
     const userAgreements = agreements.filter(agreement => {
-      return agreement.lenderId === userId || agreement.borrowerId === userId;
+      if (userId && (agreement.lenderId === userId || agreement.borrowerId === userId)) return true;
+      if (witnessEmail && agreement.witnessEmail === witnessEmail) return true;
+      return false;
     });
 
     return NextResponse.json({ agreements: userAgreements }, { status: 200 });

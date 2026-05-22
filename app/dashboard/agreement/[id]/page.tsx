@@ -110,7 +110,7 @@ export default function AgreementDetailPage({
     )
     : 0
 
-const handleStrictModeToggle = async (checked: boolean) => {
+  const handleStrictModeToggle = async (checked: boolean) => {
     setIsStrictMode(checked)
     try {
       await fetch(`/api/agreements/${id}`, {
@@ -432,7 +432,12 @@ const handleStrictModeToggle = async (checked: boolean) => {
   }
 
   const openPaymentDialog = () => {
-    router.push(`/dashboard/agreement/${id}/pay`)
+    const plan = agreement?.selectedInstallmentPlan
+    if (plan?.status === 'accepted' && plan.installments?.length > 0) {
+      router.push(`/dashboard/agreement/${id}/installment-payment`)
+    } else {
+      router.push(`/dashboard/agreement/${id}/pay`)
+    }
   }
 
   const handleConfirmReceipt = async () => {
@@ -514,14 +519,17 @@ const handleStrictModeToggle = async (checked: boolean) => {
             <>
               <h1 className="text-xl font-bold">{agreement.assetName}</h1>
               <p className="text-sm text-muted-foreground">
-                Lent to {agreement.borrowerName}
+                {isBorrower ? `Borrowed from ${agreement.lenderName}` : `Lent to ${agreement.borrowerName}`}
                 {agreement.instructions && <> &middot; {agreement.instructions}</>}
               </p>
             </>
           ) : (
             <>
               <h1 className="text-xl font-bold">{agreement.borrowerName}</h1>
-              <p className="text-sm text-muted-foreground">{agreement.purpose || "No purpose specified"}</p>
+              <p className="text-sm text-muted-foreground">
+                {isBorrower ? `Borrowed from ${agreement.lenderName}` : `Lent to ${agreement.borrowerName}`}
+                {agreement.purpose && <> &middot; {agreement.purpose}</>}
+              </p>
             </>
           )}
         </div>
@@ -563,39 +571,37 @@ const handleStrictModeToggle = async (checked: boolean) => {
           </div>
         </div>
 
-        {agreement.witnessName ? (
-          <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-            {agreement.witnessApproved ? (
-              <CheckCircle2 className="h-8 w-8 text-primary" />
-            ) : (
-              <Users className="h-8 w-8 text-orange" />
-            )}
-            <div>
-              <div className="text-sm text-muted-foreground">Witness Status</div>
-              <div className="font-semibold">{agreement.witnessName}</div>
-              <div
-                className={`text-sm ${agreement.witnessApproved ? "text-primary" : "text-orange"
-                  }`}
-              >
-                {agreement.witnessApproved ? "Approved" : "Pending Approval"}
-              </div>
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
+          <Package className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <div className="text-sm text-muted-foreground">Agreement Type</div>
+            <div className="font-semibold">
+              {agreement.dealType === 'asset' ? 'Asset Lending' : 'Money Lending'}
             </div>
+            <div className="text-sm text-muted-foreground">{agreement.witnessName ? "Witness required" : "No witness required"}</div>
           </div>
-        ) : (
-          <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-            <Package className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <div className="text-sm text-muted-foreground">
-                {agreement.dealType === 'asset' ? 'Asset Type' : 'Agreement Type'}
-              </div>
-              <div className="font-semibold">
-                {agreement.dealType === 'asset' ? 'Asset Lending' : 'Money Lending'}
-              </div>
-              <div className="text-sm text-muted-foreground">No witness required</div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* Witness Details — full-width box when witness is present */}
+      {agreement.witnessName && (
+        <div className="mb-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">Witness Details</h2>
+          <div className="flex items-center gap-4">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${agreement.witnessApproved ? "bg-primary/20 text-primary" : "bg-secondary text-orange"}`}>
+              <Users className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-lg">{agreement.witnessName}</div>
+              {agreement.witnessEmail && <p className="text-sm text-muted-foreground">{agreement.witnessEmail}</p>}
+              {agreement.witnessPhone && <p className="text-sm text-muted-foreground">{agreement.witnessPhone}</p>}
+            </div>
+            <div className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${agreement.witnessApproved ? "bg-primary/10 text-primary" : "bg-orange/10 text-orange"}`}>
+              {agreement.witnessApproved ? "Approved" : "Pending Approval"}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Asset Details (for asset lending) */}
       {agreement.dealType === 'asset' && (
@@ -720,7 +726,7 @@ const handleStrictModeToggle = async (checked: boolean) => {
                 <span className="text-sm font-semibold ">TEE Secured</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Trust:</span>
@@ -733,24 +739,24 @@ const handleStrictModeToggle = async (checked: boolean) => {
                 <span className="ml-2 font-semibold">{agreement.aiAnalysis.riskLevel}%</span>
               </div>
             </div>
-            
+
             {/* Hardware Acceleration Badge */}
             <div className="flex items-center justify-center gap-4 pt-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 <span>Intel TDX</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 <span>NVIDIA GPU</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 <span>Secure Processing</span>
               </div>
@@ -820,8 +826,9 @@ const handleStrictModeToggle = async (checked: boolean) => {
         )
       })()}
 
-      {/* AI Repayment Plan */}
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+      {/* AI Repayment Plan — hidden for witnesses */}
+      {!isWitness && (
+        <div className="mb-6 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Payment Actions</h2>
           <Sparkles className="h-5 w-5 text-primary" />
@@ -866,57 +873,220 @@ const handleStrictModeToggle = async (checked: boolean) => {
         )}
 
         {agreement.dealType !== 'asset' && (
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Let AI suggest an optimal installment plan based on the amount and
-              timeline.
-            </p>
-            <InstallmentPlanGenerator
-              amount={agreement.amount}
-              dueDate={agreement.dueDate}
-              borrowerName={agreement.borrowerName}
-              agreementId={id}
-              onPlanConfirmed={(plan, planIndex) => {
-                // Navigate to payment proof upload page
-                router.push(`/dashboard/agreement/${id}/upload-proofs?plan=${planIndex}`)
-              }}
-            />
+          <div className="mt-4 space-y-3">
+            {(() => {
+              const planStatus = agreement.selectedInstallmentPlan?.status
+
+              // ====================== BORROWER ======================
+              if (isBorrower) {
+                // Borrow: plan pending — badge only
+                if (planStatus === 'pending') {
+                  return (
+                    <div className="relative">
+                      <Button variant="outline" disabled className="w-full h-12 border-amber-400/40 text-amber-600 bg-amber-50/50">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Installment Plan with AI
+                      </Button>
+                      <div className="absolute -top-2 -right-2 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2.5 py-0.5 shadow">
+                        Request Pending
+                      </div>
+                    </div>
+                  )
+                }
+                // Borrow: plan accepted
+                if (planStatus === 'accepted') {
+                  return (
+                    <div className="relative">
+                      <Button variant="outline" disabled className="w-full h-12 border-green-400/40 text-green-600 bg-green-50/50">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Installment Plan with AI
+                      </Button>
+                      <div className="absolute -top-2 -right-2 rounded-full bg-green-500 text-white text-[10px] font-bold px-2.5 py-0.5 shadow">
+                        Accepted
+                      </div>
+                    </div>
+                  )
+                }
+                // Borrow: plan declined — frozen
+                if (planStatus === 'declined') {
+                  return (
+                    <div className="relative">
+                      <Button variant="outline" disabled className="w-full h-12 border-red-300 text-red-400 bg-red-50/50 cursor-not-allowed">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Installment Plan with AI
+                      </Button>
+                      <div className="absolute -top-2 -right-2 rounded-full bg-destructive text-white text-[10px] font-bold px-2.5 py-0.5 shadow">
+                        Declined
+                      </div>
+                    </div>
+                  )
+                }
+                // Borrow: no plan yet — show generator
+                return (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Let AI suggest an optimal installment plan based on the amount and timeline.
+                    </p>
+                    <InstallmentPlanGenerator
+                      amount={agreement.amount}
+                      dueDate={agreement.dueDate}
+                      borrowerName={agreement.borrowerName}
+                      agreementId={id}
+                      userRole="borrower"
+                      userId={currentUserId || ''}
+                      onPlanConfirmed={() => fetchAgreement()}
+                    />
+                  </>
+                )
+              }
+
+              // ====================== LENDER ======================
+              if (isLender) {
+                // Lend: plan pending — review button
+                if (planStatus === 'pending') {
+                  return (
+                    <InstallmentPlanGenerator
+                      amount={agreement.amount}
+                      dueDate={agreement.dueDate}
+                      borrowerName={agreement.borrowerName}
+                      agreementId={id}
+                      userRole="lender"
+                      userId={currentUserId || ''}
+                      planStatus="pending"
+                      existingPlan={(() => {
+                        const sp = agreement.selectedInstallmentPlan
+                        if (!sp) return null
+                        return {
+                          planName: sp.planName,
+                          description: sp.description || '',
+                          durationMonths: sp.durationMonths || Math.ceil(sp.installments.length / 4),
+                          totalAmount: sp.installments.reduce((s: number, i: any) => s + i.amount, 0),
+                          installments: sp.installments,
+                          planIndex: sp.planIndex,
+                        }
+                      })()}
+                      onReviewComplete={() => fetchAgreement()}
+                    />
+                  )
+                }
+                // Lend: plan accepted — clickable to view installment details
+                if (planStatus === 'accepted') {
+                  return (
+                    <button
+                      onClick={() => router.push(`/dashboard/agreement/${id}/installment-payment`)}
+                      className="w-full rounded-lg border border-green-200 bg-green-50/50 p-4 text-left hover:bg-green-100/50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 text-green-700 font-medium">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white text-xs font-bold">✓</div>
+                        Installment Plan Accepted
+                      </div>
+                      <p className="text-sm text-green-600 mt-1">
+                        The borrower has been notified about the repayment schedule. Click to view installment details.
+                      </p>
+                    </button>
+                  )
+                }
+                // Lend: plan declined
+                if (planStatus === 'declined') {
+                  return (
+                    <div className="rounded-lg border border-red-200 bg-red-50/50 p-4">
+                      <div className="flex items-center gap-2 text-red-700 font-medium">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white text-xs font-bold">✕</div>
+                        Installment Plan Declined
+                      </div>
+                      <p className="text-sm text-red-600 mt-1">
+                        The proposed installment plan was declined. Contact the borrower to discuss alternative arrangements.
+                      </p>
+                    </div>
+                  )
+                }
+                // Lend: no plan yet — info state
+                return (
+                  <div className="rounded-lg border border-border bg-secondary/30 p-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-sm font-medium">AI Installment Plan</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      The borrower can request an AI-generated installment plan for repayment.
+                      You will be notified when a plan is ready for your review.
+                    </p>
+                  </div>
+                )
+              }
+
+              return null
+            })()}
           </div>
         )}
       </div>
+      )}
 
       {/* Proof Gallery */}
       <div className="mb-6 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold mb-4">Proof Gallery</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Lender's Proof */}
-          <div className="rounded-lg border border-border bg-secondary/30 p-4">
-            <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-              <User className="h-4 w-4" />
-              {agreement.dealType === 'asset' ? "Deposit Proof" : "Lender's Proof"}
+          {agreement.dealType === 'asset' ? (
+            /* Asset Photos — replaces Deposit Proof for asset lending */
+            <div className="rounded-lg border border-border bg-secondary/30 p-4">
+              <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+                Asset Photos
+              </div>
+              {agreement.assetPhotos && agreement.assetPhotos.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {agreement.assetPhotos.map((photo: { fileName: string; fileUrl: string; uploadedAt?: Date }, idx: number) => (
+                    <a
+                      key={idx}
+                      href={photo.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square rounded-lg overflow-hidden border border-border bg-card hover:ring-2 ring-primary/50 transition-all"
+                    >
+                      <img
+                        src={photo.fileUrl}
+                        alt={photo.fileName || `Asset photo ${idx + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No photos uploaded yet
+                </div>
+              )}
             </div>
-            {agreement.lenderProof ? (
-              <div className="flex items-center gap-3 rounded-lg bg-card p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                  <ImageIcon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate text-sm">
-                    {agreement.lenderProof.fileName}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Uploaded{" "}
-                    {new Date(agreement.lenderProof.uploadedAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            /* Lender's Proof — for money lending */
+            <div className="rounded-lg border border-border bg-secondary/30 p-4">
+              <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                Lender's Proof
               </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No proof uploaded yet
-              </div>
-            )}
-          </div>
+              {agreement.lenderProof ? (
+                <div className="flex items-center gap-3 rounded-lg bg-card p-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                    <ImageIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate text-sm">
+                      {agreement.lenderProof.fileName}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Uploaded{" "}
+                      {new Date(agreement.lenderProof.uploadedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No proof uploaded yet
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Borrower's Proof */}
           <div className="rounded-lg border border-border bg-secondary/30 p-4">
@@ -956,37 +1126,13 @@ const handleStrictModeToggle = async (checked: boolean) => {
             )}
           </div>
 
-          {/* Asset Photos (for asset lending) */}
-          {agreement.dealType === 'asset' && agreement.assetPhotos && agreement.assetPhotos.length > 0 && (
-            <div className="sm:col-span-2 rounded-lg border border-border bg-secondary/30 p-4">
-              <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-                <ImageIcon className="h-4 w-4" />
-                Asset Photos
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {agreement.assetPhotos.map((photo: { fileName: string; fileUrl: string; uploadedAt?: Date }, idx: number) => (
-                  <a
-                    key={idx}
-                    href={photo.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block aspect-square rounded-lg overflow-hidden border border-border bg-card hover:ring-2 ring-primary/50 transition-all"
-                  >
-                    <img
-                      src={photo.fileUrl}
-                      alt={photo.fileName || `Asset photo ${idx + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
 
-      {/* AI Mediator Chat */}
-      <div className="mb-6 rounded-xl border border-border bg-card overflow-hidden">
+      {/* AI Mediator Chat — hidden for witnesses */}
+      {!isWitness && (
+        <div className="mb-6 rounded-xl border border-border bg-card overflow-hidden">
         <button
           onClick={() => setShowAIChat(!showAIChat)}
           className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors"
@@ -1088,25 +1234,67 @@ const handleStrictModeToggle = async (checked: boolean) => {
           </div>
         )}
       </div>
+      )}
 
-      {/* Borrower Contact Info */}
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Borrower Details</h2>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-muted-foreground" />
-            <span>{agreement.borrowerName}</span>
+      {/* Contact Info */}
+      {isWitness ? (
+        <>
+          {/* Lender Details */}
+          <div className="mb-6 rounded-xl border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold mb-4">Lender Details</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.lenderName}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.lenderEmail}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.lenderPhone || "—"}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Mail className="h-5 w-5 text-muted-foreground" />
-            <span>{agreement.borrowerEmail}</span>
+          {/* Borrower Details */}
+          <div className="mb-6 rounded-xl border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold mb-4">Borrower Details</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.borrowerName}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.borrowerEmail}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground" />
+                <span>{agreement.borrowerPhone || "—"}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Phone className="h-5 w-5 text-muted-foreground" />
-            <span>{agreement.borrowerPhone}</span>
+        </>
+      ) : (
+        <div className="mb-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">{isBorrower ? "Lender Details" : "Borrower Details"}</h2>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-muted-foreground" />
+              <span>{isBorrower ? agreement.lenderName : agreement.borrowerName}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-muted-foreground" />
+              <span>{isBorrower ? agreement.lenderEmail : agreement.borrowerEmail}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone className="h-5 w-5 text-muted-foreground" />
+              <span>{isBorrower ? "—" : (agreement.borrowerPhone || "—")}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Settlement Actions */}
       <div className="space-y-3">
@@ -1141,6 +1329,33 @@ const handleStrictModeToggle = async (checked: boolean) => {
                 <Upload className="mr-2 h-5 w-5" />
                 {isUploading ? "Uploading..." : "Upload Return Proof & Close"}
               </Button>
+            ) : agreement.selectedInstallmentPlan?.status === 'accepted' ? (
+              <>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    onClick={openPaymentDialog}
+                    className="h-14 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Banknote className="mr-2 h-5 w-5" />
+                    Pay Installments
+                  </Button>
+                </div>
+                {(() => {
+                  const installments = agreement.selectedInstallmentPlan?.installments
+                  const paidCount = installments?.filter((i: any) => i.proofUploaded).length || 0
+                  return (
+                    <Button
+                      onClick={() => router.push(`/dashboard/agreement/${id}/installment-payment`)}
+                      disabled={paidCount === 0}
+                      variant="outline"
+                      className="w-full h-14 border-primary text-primary hover:bg-primary/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Banknote className="mr-2 h-5 w-5" />
+                      Save Changes {paidCount > 0 ? `(${paidCount} of ${installments?.length || 0})` : ''}
+                    </Button>
+                  )
+                })()}
+              </>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <Button

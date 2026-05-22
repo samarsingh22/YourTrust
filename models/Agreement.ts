@@ -64,6 +64,7 @@ export interface IAgreement extends Document {
       proofFileName?: string;
       uploadedAt?: Date;
     }>;
+    status: 'pending' | 'accepted' | 'declined';
   };
   groupContribution?: boolean;
   moneyRequestId?: string;
@@ -244,6 +245,11 @@ const AgreementSchema: Schema = new Schema(
         },
         planName: {
           type: String,
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'accepted', 'declined'],
+          default: 'pending',
         },
         installments: {
           type: [
