@@ -4,7 +4,6 @@ import localFont from 'next/font/local'
 import { Inter, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-import SmoothScrollProvider from '@/providers/SmoothScrollProvider'
 
 const sonko = localFont({
   src: [
@@ -84,10 +83,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sonko.variable} ${sonkoBlack.variable} ${sonkoBold.variable} ${sonkoMedium.variable} ${sonkoLight.variable} ${sonkoThin.variable}`}>
       <body className={`font-sans antialiased`}>
-        <SmoothScrollProvider>
           {children}
           <Analytics />
-        </SmoothScrollProvider>
       </body>
     </html>
   )
