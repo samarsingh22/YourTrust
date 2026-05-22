@@ -5,6 +5,7 @@ import Link from "next/link";
 import Container from "@/components/brutalist/Container";
 import BrutalistButton from "@/components/brutalist/Button";
 import BrutalistShapes from "@/components/graphics/BrutalistShapes";
+import { Sparkles } from "lucide-react";
 import { siteConfig } from "@/lib/data";
 
 export default function Hero() {
@@ -20,7 +21,7 @@ export default function Hero() {
           className="mb-8 inline-block border-2 border-[#4A6444] px-4 py-1.5"
         >
           <span className="font-sonko-medium text-xs uppercase tracking-[0.2em] text-[#4A6444]">
-            {siteConfig.name} Powered by AI for smarter lending
+            <Sparkles className="inline-block h-3 w-3 mr-1.5 -mt-0.5" /> Powered by AI for smarter lending
           </span>
         </motion.div>
 
