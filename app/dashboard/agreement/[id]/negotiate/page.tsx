@@ -209,14 +209,14 @@ export default function NegotiatePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
+                  <Sparkles className="h-5 w-5 " />
                   AI Negotiation Assistant
                   {userRole && (
                     <Badge variant={userRole === 'borrower' ? 'default' : 'secondary'}>
                       {userRole === 'borrower' ? '👤 Borrower' : '💼 Lender'}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+                  <Badge variant="outline" >
                     <div className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                       <span className="text-xs">NEAR AI • TEE</span>
@@ -227,7 +227,7 @@ export default function NegotiatePage() {
                   {userRole === 'borrower' 
                     ? 'Negotiate terms, extend deadlines, and get payment advice'
                     : 'Get borrower insights, risk assessment, and collection strategies'}
-                  <span className="block text-xs mt-1 text-purple-600">
+                  <span className="block text-xs mt-1 ">
                     🔒 Privacy-preserving AI powered by NEAR AI Cloud with TEE security
                   </span>
                 </CardDescription>
@@ -289,12 +289,12 @@ export default function NegotiatePage() {
               >
                 {msg.role !== 'user' && (
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    msg.role === 'ai' ? 'bg-purple-100' : 'bg-gray-100'
+                    msg.role === 'ai' ? 'bg-primary/20' : 'bg-secondary'
                   }`}>
                     {msg.role === 'ai' ? (
-                      <Bot className="h-4 w-4 text-purple-600" />
+                      <Bot className="h-4 w-4 text-primary" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-gray-600" />
+                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                 )}
@@ -302,25 +302,25 @@ export default function NegotiatePage() {
                 <div
                   className={`max-w-[70%] rounded-lg p-3 ${
                     msg.role === 'user'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : msg.role === 'ai'
-                      ? 'bg-purple-50 text-gray-900 border border-purple-200'
-                      : 'bg-gray-100 text-gray-700'
+                      ? 'bg-card text-foreground border border-border'
+                      : 'bg-muted text-foreground'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">
                     {msg.content.replace(/^\[(BORROWER|LENDER)\]\s*/, '')}
                   </p>
                   <p className={`text-xs mt-1 ${
-                    msg.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
                   }`}>
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
 
                 {msg.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-blue-600" />
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
                   </div>
                 )}
               </div>
@@ -328,15 +328,15 @@ export default function NegotiatePage() {
             
             {loading && (
               <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-purple-600" />
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-primary" />
                 </div>
-                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                <div className="bg-card rounded-lg p-3 border border-border">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                    <div className="text-xs text-purple-600">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <div className="text-xs text-foreground">
                       <div className="font-semibold">Processing with NEAR AI...</div>
-                      <div className="text-purple-500">🔒 TEE-Secured • Privacy-Preserving</div>
+                      <div className="text-muted-foreground">🔒 TEE-Secured • Privacy-Preserving</div>
                     </div>
                   </div>
                 </div>
@@ -354,7 +354,7 @@ export default function NegotiatePage() {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about extending deadline, installment plans, or payment options..."
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 bg-background"
               />
               <Button
                 onClick={sendMessage}
@@ -373,13 +373,13 @@ export default function NegotiatePage() {
                   ? '💡 Try: "Can I extend the deadline by 5 days?" or "What installment plans are available?"'
                   : '💡 Try: "Is this borrower reliable?" or "What\'s the best way to approach them for payment?"'}
               </p>
-              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md border ">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-xs font-semibold text-blue-600">NEAR AI</span>
+                  <span className="text-xs font-semibold ">NEAR AI</span>
                 </div>
                 <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-purple-600">🔒 TEE Secured</span>
+                <span className="text-xs ">🔒 TEE Secured</span>
               </div>
             </div>
           </div>

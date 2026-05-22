@@ -106,6 +106,26 @@
   }
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #4A6444;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A5235;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4A6444 transparent;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0);

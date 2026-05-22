@@ -717,9 +717,9 @@ const handleStrictModeToggle = async (checked: boolean) => {
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">AI Analysis</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40">
-                <Sparkles className="h-4 w-4 text-blue-400" />
-                <span className="text-sm font-semibold text-blue-300">TEE Secured</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-dark-green-500/40">
+                <Sparkles className="h-4 w-4 " />
+                <span className="text-sm font-semibold ">TEE Secured</span>
               </div>
             </div>
             
@@ -817,10 +817,10 @@ const handleStrictModeToggle = async (checked: boolean) => {
         </div>
 
         {/* AI Negotiation Chat - Available to both parties */}
-        <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30">
+        <div className="mb-6 p-4 rounded-lg border">
           <div className="flex items-start gap-3 mb-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-purple-400" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center">
+              <Sparkles className="h-5 w-5 " />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-sm mb-1">AI Negotiation Assistant</h3>
@@ -831,7 +831,7 @@ const handleStrictModeToggle = async (checked: boolean) => {
           </div>
           <Button
             onClick={() => router.push(`/dashboard/agreement/${id}/negotiate`)}
-            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            className="w-full  bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Sparkles className="mr-2 h-4 w-4" />
             Start AI Negotiation
@@ -1013,7 +1013,7 @@ const handleStrictModeToggle = async (checked: boolean) => {
                     className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : msg.role === "system"
-                        ? "bg-secondary/50 text-muted-foreground"
+                        ? "bg-secondary/50 text-foreground"
                         : "bg-secondary text-foreground"
                       }`}
                   >
@@ -1063,7 +1063,7 @@ const handleStrictModeToggle = async (checked: boolean) => {
                   value={aiMessage}
                   onChange={(e) => setAiMessage(e.target.value)}
                   placeholder="Type a message to AI..."
-                  className="h-12 bg-input border-border"
+                  className="h-12 bg-background border-border"
                 />
                 <Button
                   type="submit"
