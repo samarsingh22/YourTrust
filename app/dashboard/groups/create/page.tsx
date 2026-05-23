@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Plus, X } from "lucide-react"
+import { showToast } from "@/lib/toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -58,12 +59,12 @@ export default function CreateGroupPage() {
     e.preventDefault()
 
     if (!currentUser) {
-      alert("Please sign in to create a group")
+      showToast("Please sign in to create a group", "warning")
       return
     }
 
     if (!formData.name) {
-      alert("Please enter a group name")
+      showToast("Please enter a group name", "warning")
       return
     }
 
@@ -90,11 +91,11 @@ export default function CreateGroupPage() {
       if (response.ok) {
         router.push(`/dashboard/groups/${data.group._id}`)
       } else {
-        alert(`Failed to create group: ${data.error}`)
+        showToast(`Failed to create group: ${data.error}`, "error")
       }
     } catch (error) {
       console.error("Error creating group:", error)
-      alert("Failed to create group. Please try again.")
+      showToast("Failed to create group. Please try again.", "error")
     } finally {
       setIsSubmitting(false)
     }

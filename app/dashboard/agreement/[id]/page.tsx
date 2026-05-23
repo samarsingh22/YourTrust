@@ -5,6 +5,7 @@ import React from "react"
 import { useState, use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { showToast } from "@/lib/toast"
 import {
   ArrowLeft,
   Calendar,
@@ -271,19 +272,19 @@ export default function AgreementDetailPage({
       })
 
       if (response.ok) {
-        alert("Payment reminder sent successfully!")
+        showToast("Payment reminder sent successfully!", "success")
       } else {
-        alert("Failed to send reminder")
+        showToast("Failed to send reminder", "error")
       }
     } catch (error) {
       console.error("Error sending reminder:", error)
-      alert("Failed to send reminder")
+      showToast("Failed to send reminder", "error")
     }
   }
 
   const handleExtendDueDate = async () => {
     if (!selectedExtensionDays || selectedExtensionDays < 1) {
-      alert("Please select valid extension days")
+      showToast("Please select valid extension days", "warning")
       return
     }
 
@@ -301,15 +302,15 @@ export default function AgreementDetailPage({
       const data = await response.json()
 
       if (response.ok) {
-        alert(`Due date extended by ${selectedExtensionDays} day(s) successfully!`)
+        showToast(`Due date extended by ${selectedExtensionDays} day(s) successfully!`, "success")
         setShowExtensionModal(false)
         await fetchAgreement() // Refresh agreement data
       } else {
-        alert(data.error || "Failed to extend due date")
+        showToast(data.error || "Failed to extend due date", "error")
       }
     } catch (error) {
       console.error("Error extending due date:", error)
-      alert("Failed to extend due date")
+      showToast("Failed to extend due date", "error")
     } finally {
       setIsExtending(false)
     }
@@ -322,14 +323,14 @@ export default function AgreementDetailPage({
       })
 
       if (response.ok) {
-        alert("Agreement approved successfully!")
+        showToast("Agreement approved successfully!", "success")
         await fetchAgreement() // Refresh agreement data
       } else {
-        alert("Failed to approve agreement")
+        showToast("Failed to approve agreement", "error")
       }
     } catch (error) {
       console.error("Error approving agreement:", error)
-      alert("Failed to approve agreement")
+      showToast("Failed to approve agreement", "error")
     }
   }
 
@@ -339,7 +340,7 @@ export default function AgreementDetailPage({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file")
+      showToast("Please upload an image file", "warning")
       return
     }
 
@@ -386,14 +387,15 @@ export default function AgreementDetailPage({
         throw new Error("Failed to update agreement")
       }
 
-      alert(agreement.dealType === 'asset'
+      showToast(agreement.dealType === 'asset'
         ? "Return proof uploaded successfully! The lender will verify the asset return."
-        : "Proof uploaded successfully! Agreement is now under review."
+        : "Proof uploaded successfully! Agreement is now under review.",
+        "success"
       )
       await fetchAgreement() // Refresh data
     } catch (error: any) {
       console.error("Error uploading proof:", error)
-      alert(`Failed to upload proof: ${error.message}`)
+      showToast(`Failed to upload proof: ${error.message}`, "error")
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
@@ -419,15 +421,15 @@ export default function AgreementDetailPage({
       })
 
       if (response.ok) {
-        alert("Agreement settled successfully!")
+        showToast("Agreement settled successfully!", "success")
         await fetchAgreement()
         router.push("/dashboard")
       } else {
-        alert("Failed to settle agreement")
+        showToast("Failed to settle agreement", "error")
       }
     } catch (error) {
       console.error("Error settling agreement:", error)
-      alert("Failed to settle agreement")
+      showToast("Failed to settle agreement", "error")
     }
   }
 
@@ -466,10 +468,10 @@ export default function AgreementDetailPage({
         await fetchAgreement()
         router.push("/dashboard")
       } else {
-        alert("Failed to confirm. Please try again.")
+        showToast("Failed to confirm. Please try again.", "error")
       }
     } catch {
-      alert("Something went wrong.")
+      showToast("Something went wrong.", "error")
     } finally {
       setIsConfirmingReceipt(false)
     }

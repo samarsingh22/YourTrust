@@ -5,6 +5,7 @@ import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Plus, User, Bell, Sparkles, Users, Clock } from "lucide-react"
+import FeatureGraphics from "@/components/graphics/FeatureGraphics"
 import useFcmToken from "@/hooks/useFcmToken"
 
 export default function DashboardLayout({
@@ -25,7 +26,10 @@ export default function DashboardLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className="relative min-h-screen bg-background pb-20 lg:pb-0">
+      {/* Background Graphics */}
+      <FeatureGraphics />
+
       {/* Desktop Header */}
       <header className="fixed top-0 left-0 right-0 z-50 hidden border-b border-border bg-background/95 backdrop-blur-sm lg:block">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">

@@ -22,9 +22,9 @@ const BrutalistButton = forwardRef<HTMLButtonElement, ButtonProps>(
           {
             "bg-[#4A6444] text-[#F5E5B1] hover:bg-[#3A5235]":
               variant === "primary",
-            "bg-transparent text-[#4A6444] hover:bg-[#4A6444]/5":
+            "bg-transparent text-[#4A6444] hover:bg-[#4A6444]/15":
               variant === "outline",
-            "border-transparent bg-transparent text-[#4A6444] hover:bg-[#4A6444]/5":
+            "border-transparent bg-transparent text-[#4A6444] hover:bg-[#4A6444]/15":
               variant === "ghost",
           },
           {

@@ -28,7 +28,8 @@ export default function Header() {
     >
       <Container as="div" className="flex items-center justify-between py-4">
         <a href="#" className="flex items-center gap-2">
-          <div className="h-7 w-7 border-2 border-[#4A6444] bg-[#4A6444]" />
+          {/* <div className="h-7 w-7 " /> */}
+          <img src="/logo.png" alt="YourTrust" className="h-10 w-10 object-contain" />
           <span className="font-sonko-black text-lg tracking-tight text-[#4A6444]">
             YourTrust
           </span>

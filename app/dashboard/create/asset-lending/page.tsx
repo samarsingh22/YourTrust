@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { showToast } from "@/lib/toast"
 import {
   ArrowLeft,
   ArrowRight,
@@ -155,7 +156,7 @@ export default function AssetLendingPage() {
 
   const handleSubmit = async () => {
     if (!currentUser) {
-      alert("Please sign in to create an agreement")
+      showToast("Please sign in to create an agreement", "warning")
       return
     }
 
@@ -215,15 +216,15 @@ export default function AssetLendingPage() {
         router.push("/dashboard")
       } else {
         if (data.message) {
-          alert(data.message)
+          showToast(data.message, "error")
         } else {
-          alert(`Failed to create agreement: ${data.error}`)
+          showToast(`Failed to create agreement: ${data.error}`, "error")
         }
         setIsSubmitting(false)
       }
     } catch (error) {
       console.error("Error creating agreement:", error)
-      alert("Failed to create agreement. Please try again.")
+      showToast("Failed to create agreement. Please try again.", "error")
     } finally {
       setIsSubmitting(false)
     }

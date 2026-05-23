@@ -6,6 +6,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Sparkles, Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { showToast } from "@/lib/toast"
+import FeatureGraphics from "@/components/graphics/FeatureGraphics"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -59,9 +61,9 @@ export default function SignUpPage() {
     } catch (error: any) {
       console.error("Signup error:", error)
       if (error.code === 'auth/configuration-not-found') {
-        alert("Error: Email/Password sign-in is not enabled in your Firebase Console. Please go to Authentication -> Sign-in method and enable it.");
+        showToast("Email/Password sign-in is not enabled. Please enable it in Firebase Console.", "error");
       } else {
-        alert("Signup failed: " + error.message)
+        showToast("Signup failed: " + error.message, "error")
       }
     } finally {
       setIsLoading(false)
@@ -107,7 +109,7 @@ export default function SignUpPage() {
       router.push("/dashboard")
     } catch (error: any) {
       console.error("Google login error:", error)
-      alert(error.message)
+      showToast(error.message, "error")
     } finally {
       setIsLoading(false)
     }
@@ -116,7 +118,8 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Background Elements */}
-      <div className="pointer-events-none fixed inset-0">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <FeatureGraphics />
         <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
       </div>

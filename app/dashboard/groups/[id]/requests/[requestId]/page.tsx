@@ -3,6 +3,7 @@
 import { useState, use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { showToast } from "@/lib/toast"
 import {
   ArrowLeft,
   DollarSign,
@@ -100,12 +101,12 @@ export default function MoneyRequestDetailPage({
     const amount = parseFloat(contributionAmount)
 
     if (!amount || amount <= 0) {
-      alert("Please enter a valid amount")
+      showToast("Please enter a valid amount", "warning")
       return
     }
 
     if (amount > moneyRequest.amountRemaining) {
-      alert(`Cannot contribute more than ₹${moneyRequest.amountRemaining}`)
+      showToast(`Cannot contribute more than ₹${moneyRequest.amountRemaining}`, "warning")
       return
     }
 
@@ -132,11 +133,11 @@ export default function MoneyRequestDetailPage({
         // Redirect to the created agreement
         router.push(`/dashboard/agreement/${data.agreement._id}`)
       } else {
-        alert(`Failed to contribute: ${data.error}`)
+        showToast(`Failed to contribute: ${data.error}`, "error")
       }
     } catch (error) {
       console.error("Error contributing:", error)
-      alert("Failed to contribute. Please try again.")
+      showToast("Failed to contribute. Please try again.", "error")
     } finally {
       setIsContributing(false)
     }

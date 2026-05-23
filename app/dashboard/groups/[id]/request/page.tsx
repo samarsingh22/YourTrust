@@ -4,6 +4,7 @@ import { useState, use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, DollarSign, Calendar, FileText } from "lucide-react"
+import { showToast } from "@/lib/toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -51,12 +52,12 @@ export default function RequestMoneyPage({
     e.preventDefault()
 
     if (!currentUser) {
-      alert("Please sign in to request money")
+      showToast("Please sign in to request money", "warning")
       return
     }
 
     if (!formData.amount || !formData.dueDate) {
-      alert("Please fill in all required fields")
+      showToast("Please fill in all required fields", "warning")
       return
     }
 
@@ -84,11 +85,11 @@ export default function RequestMoneyPage({
       if (response.ok) {
         router.push(`/dashboard/groups/${id}`)
       } else {
-        alert(`Failed to create request: ${data.error}`)
+        showToast(`Failed to create request: ${data.error}`, "error")
       }
     } catch (error) {
       console.error("Error creating request:", error)
-      alert("Failed to create request. Please try again.")
+      showToast("Failed to create request. Please try again.", "error")
     } finally {
       setIsSubmitting(false)
     }

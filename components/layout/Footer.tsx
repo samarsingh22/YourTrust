@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <a href="#" className="flex items-center gap-2">
-              <div className="h-6 w-6 border-2 border-[#F5E5B1] bg-[#F5E5B1]" />
+              <img src="/logo.png" alt="YourTrust" className="h-10 w-10 object-contain" />
               <span className="font-sonko-black text-base tracking-tight text-[#F5E5B1]">
                 YourTrust
               </span>

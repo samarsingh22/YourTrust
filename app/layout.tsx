@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Inter, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const sonko = localFont({
@@ -84,6 +85,7 @@ export default function RootLayout({
     <html lang="en" className={`${sonko.variable} ${sonkoBlack.variable} ${sonkoBold.variable} ${sonkoMedium.variable} ${sonkoLight.variable} ${sonkoThin.variable}`}>
       <body className={`font-sans antialiased`}>
           {children}
+          <Toaster />
           <Analytics />
       </body>
     </html>
