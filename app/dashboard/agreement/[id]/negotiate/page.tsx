@@ -19,12 +19,20 @@ interface Message {
 
 interface AgreementContext {
   amount: number;
+  purpose?: string;
+  dealType?: string;
   dueDate: string;
   status: string;
   bufferDays: number;
+  remainingBufferDays?: number;
   borrowerName: string;
   lenderName: string;
+  trustScore?: number;
   hasInstallmentPlan: boolean;
+  installmentPlanStatus?: string;
+  witnessName?: string;
+  witnessApproved?: boolean;
+  daysUntilDue?: number;
   borrowerId?: string;
   lenderId?: string;
 }
@@ -42,6 +50,8 @@ export default function NegotiatePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [actionResult, setActionResult] = useState<any>(null);
   const [userRole, setUserRole] = useState<'borrower' | 'lender' | null>(null);
+  const [aiSource, setAiSource] = useState<string>('');
+  const [sourceLabel, setSourceLabel] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +145,8 @@ export default function NegotiatePage() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMessage]);
+        if (data.aiSource) setAiSource(data.aiSource);
+        if (data.sourceLabel) setSourceLabel(data.sourceLabel);
 
         // Show action result if any
         if (data.actionResult) {
@@ -209,17 +221,17 @@ export default function NegotiatePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 " />
+                  <Sparkles className="h-5 w-5" />
                   AI Negotiation Assistant
                   {userRole && (
                     <Badge variant={userRole === 'borrower' ? 'default' : 'secondary'}>
                       {userRole === 'borrower' ? '👤 Borrower' : '💼 Lender'}
                     </Badge>
                   )}
-                  <Badge variant="outline" >
+                  <Badge variant="outline">
                     <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                      <span className="text-xs">NEAR AI • TEE</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${aiSource === 'near_ai' ? 'bg-green-500' : aiSource === 'gemini' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
+                      <span className="text-xs">{sourceLabel || 'Assistant'}</span>
                     </div>
                   </Badge>
                 </CardTitle>
@@ -241,22 +253,32 @@ export default function NegotiatePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Amount</p>
-                <p className="font-semibold">{agreementContext.amount.toLocaleString()} ₹</p>
+                <p className="font-semibold">₹{agreementContext.amount.toLocaleString()}</p>
+                {agreementContext.purpose && (
+                  <p className="text-[10px] text-muted-foreground truncate">{agreementContext.purpose}</p>
+                )}
               </div>
               <div>
                 <p className="text-muted-foreground">Due Date</p>
                 <p className="font-semibold">
                   {new Date(agreementContext.dueDate).toLocaleDateString()}
                 </p>
+                {agreementContext.daysUntilDue !== undefined && (
+                  <p className={`text-[10px] ${agreementContext.daysUntilDue > 0 ? 'text-muted-foreground' : 'text-orange'}`}>
+                    {agreementContext.daysUntilDue > 0 ? `${agreementContext.daysUntilDue} days left` : agreementContext.daysUntilDue === 0 ? 'Due today' : `${Math.abs(agreementContext.daysUntilDue)}d overdue`}
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-muted-foreground">Buffer Days</p>
-                <p className="font-semibold">{agreementContext.bufferDays} days</p>
+                <p className="font-semibold">{agreementContext.remainingBufferDays ?? agreementContext.bufferDays}/{agreementContext.bufferDays} left</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Installment Plan</p>
-                <p className="font-semibold">
-                  {agreementContext.hasInstallmentPlan ? '✅ Active' : '❌ None'}
+                <p className="text-muted-foreground">Trust Score</p>
+                <p className="font-semibold">{agreementContext.trustScore ?? 80}/100</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {agreementContext.hasInstallmentPlan ? `Plan: ${agreementContext.installmentPlanStatus || 'Active'}` : 'No plan'}
+                  {agreementContext.witnessName ? ` · Wit: ${agreementContext.witnessApproved ? '✅' : '⏳'}` : ''}
                 </p>
               </div>
             </div>
@@ -331,8 +353,8 @@ export default function NegotiatePage() {
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <div className="text-xs text-foreground">
-                      <div className="font-semibold">Processing with NEAR AI...</div>
-                      <div className="text-muted-foreground">🔒 TEE-Secured • Privacy-Preserving</div>
+                      <div className="font-semibold">Thinking...</div>
+                      <div className="text-muted-foreground">Analyzing your agreement data</div>
                     </div>
                   </div>
                 </div>
@@ -369,13 +391,17 @@ export default function NegotiatePage() {
                   ? '💡 Try: "Can I extend the deadline by 5 days?" or "What installment plans are available?"'
                   : '💡 Try: "Is this borrower reliable?" or "What\'s the best way to approach them for payment?"'}
               </p>
-              <div className="flex items-center gap-2 px-2 py-1 rounded-md border ">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md border">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-xs font-semibold ">NEAR AI</span>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${aiSource === 'near_ai' ? 'bg-green-500' : aiSource === 'gemini' ? 'bg-blue-500' : 'bg-amber-500'}`}></div>
+                  <span className="text-xs font-semibold">{aiSource === 'near_ai' ? 'NEAR AI' : aiSource === 'gemini' ? 'Gemini' : 'Assistant'}</span>
                 </div>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs ">🔒 TEE Secured</span>
+                {aiSource !== 'fallback' && (
+                  <>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <span className="text-xs">🔒 Secure</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
