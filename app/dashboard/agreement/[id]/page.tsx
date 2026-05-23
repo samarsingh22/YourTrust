@@ -1080,7 +1080,14 @@ export default function AgreementDetailPage({
                       {new Date(agreement.lenderProof.uploadedAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <a
+                    href={agreement.lenderProof.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center h-8 w-8 hover:bg-secondary rounded-full transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </a>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">

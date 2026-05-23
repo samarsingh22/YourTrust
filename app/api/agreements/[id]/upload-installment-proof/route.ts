@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Agreement from '@/models/Agreement';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToLocal } from '@/lib/file-upload';
 
 export async function POST(
   request: NextRequest,
@@ -48,25 +48,21 @@ export async function POST(
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
-    const result = await uploadToCloudinary(buffer, `installments/${id}`, originalName);
-
-    const proofUrl = result.secure_url;
+    const result = await uploadToLocal(buffer, file.name, `installments/${id}`);
 
     if (agreement.selectedInstallmentPlan.installments[installmentIndex]) {
       agreement.selectedInstallmentPlan.installments[installmentIndex].proofUploaded = true;
-      agreement.selectedInstallmentPlan.installments[installmentIndex].proofUrl = proofUrl;
+      agreement.selectedInstallmentPlan.installments[installmentIndex].proofUrl = result.fileUrl;
       agreement.selectedInstallmentPlan.installments[installmentIndex].proofFileName = file.name;
       agreement.selectedInstallmentPlan.installments[installmentIndex].uploadedAt = new Date();
 
       agreement.markModified('selectedInstallmentPlan');
-
       await agreement.save();
 
       return NextResponse.json(
         {
           message: 'Proof uploaded successfully',
-          proofUrl,
+          proofUrl: result.fileUrl,
           fileName: file.name,
         },
         { status: 200 }

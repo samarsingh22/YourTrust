@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToLocal } from '@/lib/file-upload';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,14 +16,13 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
-    const result = await uploadToCloudinary(buffer, 'uploads', originalName);
+    const result = await uploadToLocal(buffer, file.name);
 
     return NextResponse.json({
       success: true,
-      fileUrl: result.secure_url,
-      fileName: file.name,
-      publicId: result.public_id,
+      fileUrl: result.fileUrl,
+      fileName: result.fileName,
+      size: result.size,
     });
   } catch (error: any) {
     console.error('Upload error:', error);

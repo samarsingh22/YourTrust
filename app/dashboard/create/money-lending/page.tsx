@@ -149,6 +149,25 @@ export default function MoneyLendingPage() {
     setIsSubmitting(true)
 
     try {
+      let proofFileUrl: string | undefined
+      let proofFileName: string | undefined
+
+      if (formData.proofFile) {
+        const uploadFormData = new FormData()
+        uploadFormData.append("file", formData.proofFile)
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        })
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          proofFileUrl = uploadData.fileUrl
+          proofFileName = formData.proofFile.name
+        } else {
+          showToast("Failed to upload proof file", "warning")
+        }
+      }
+
       const agreementData = {
         lenderId: currentUser.uid,
         lenderName: currentUser.displayName || currentUser.email?.split("@")[0] || "User",
@@ -163,10 +182,10 @@ export default function MoneyLendingPage() {
         witnessName: formData.witnessName,
         witnessEmail: formData.witnessEmail,
         witnessPhone: formData.witnessPhone,
-        proofFile: formData.proofFile
+        proofFile: proofFileName && proofFileUrl
           ? {
-            fileName: formData.proofFile.name,
-            fileUrl: "/placeholder-proof.jpg",
+            fileName: proofFileName,
+            fileUrl: proofFileUrl,
           }
           : undefined,
       }
