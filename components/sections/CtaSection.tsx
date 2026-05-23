@@ -31,12 +31,14 @@ export default function CtaSection() {
           </p>
 
           <div className="relative mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/auth/signup">
             <BrutalistButton
               size="lg"
               className="min-w-[200px] border-[#F5E5B1] bg-[#F5E5B1] text-[#4A6444] hover:bg-[#F5E5B1]/90 hover:shadow-[4px_4px_0px_#3A5235]"
             >
               Get Started Free
             </BrutalistButton>
+            </Link>
             <BrutalistButton
               variant="outline"
               size="lg"
