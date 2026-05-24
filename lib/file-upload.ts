@@ -1,5 +1,5 @@
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = 'YourTrust';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 export interface UploadResult {
   fileUrl: string;
@@ -12,29 +12,26 @@ export async function uploadToLocal(
   fileName: string,
   subfolder?: string
 ): Promise<UploadResult> {
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-
-  const folder = subfolder
-    ? `YourTrust/${subfolder}`
-    : 'YourTrust/uploads';
-
-  const formData = new FormData();
-  formData.append('file', new Blob([buffer]), fileName);
-  formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('folder', folder);
-
-  const res = await fetch(url, { method: 'POST', body: formData });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Cloudinary upload failed (${res.status}): ${errText}`);
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+  if (subfolder) {
+    await mkdir(path.join(uploadsDir, subfolder), { recursive: true });
   }
+  await mkdir(uploadsDir, { recursive: true });
 
-  const data = await res.json();
+  const uniqueName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const filePath = subfolder
+    ? path.join(uploadsDir, subfolder, uniqueName)
+    : path.join(uploadsDir, uniqueName);
+
+  await writeFile(filePath, buffer);
+
+  const fileUrl = subfolder
+    ? `/uploads/${subfolder}/${uniqueName}`
+    : `/uploads/${uniqueName}`;
 
   return {
-    fileUrl: data.secure_url,
-    fileName: data.original_filename || fileName,
-    size: data.bytes,
+    fileUrl,
+    fileName: uniqueName,
+    size: buffer.length,
   };
 }

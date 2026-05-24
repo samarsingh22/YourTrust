@@ -144,7 +144,29 @@ export async function POST(request: NextRequest) {
       { event: isMoney ? 'Payment Received' : 'Asset Returned', date: null, completed: false },
     ];
 
-    // Create agreement (without AI analysis - will be updated after parallel ops)
+    // NEAR AI Trust Score Analysis with Full History
+    let aiAnalysis = null;
+    try {
+      console.log('[NEAR AI] Analyzing trust score with borrower history...');
+      aiAnalysis = await analyzeTrustScoreWithHistory(
+        amount,
+        borrowerName,
+        borrowerUser.uid,
+        borrowerEmail,
+        purpose || 'Not specified',
+        dueDate,
+        lenderName,
+        lenderId,
+        lenderEmail
+      );
+      if (aiAnalysis) {
+        console.log('[NEAR AI] Trust analysis result:', aiAnalysis);
+      }
+    } catch (aiError: any) {
+      console.error('[NEAR AI] Trust analysis failed:', aiError.message);
+    }
+
+    // Create agreement
     const agreementData: any = {
       lenderId,
       lenderName,
@@ -188,59 +210,109 @@ export async function POST(request: NextRequest) {
         timestamp: new Date(),
       },
     ];
+    agreementData.aiAnalysis = aiAnalysis || undefined;
+    agreementData.borrowerCreditReport = aiAnalysis?.borrowerCreditReport ? {
+      totalAgreements: aiAnalysis.borrowerCreditReport.totalAgreements,
+      onTimeRate: aiAnalysis.borrowerCreditReport.onTimeRate,
+      lateCount: aiAnalysis.borrowerCreditReport.lateCount,
+      totalAmount: aiAnalysis.borrowerCreditReport.totalAmount,
+      avgAmount: aiAnalysis.borrowerCreditReport.avgAmount,
+    } : {
+      totalAgreements: 0,
+      onTimeRate: 100,
+      lateCount: 0,
+      totalAmount: 0,
+      avgAmount: 0,
+    };
+    agreementData.lenderCreditReport = aiAnalysis?.lenderCreditReport ? {
+      totalAgreements: aiAnalysis.lenderCreditReport.totalAgreements,
+      avgAmount: aiAnalysis.lenderCreditReport.avgAmount,
+      totalAmount: aiAnalysis.lenderCreditReport.totalAmount,
+    } : {
+      totalAgreements: 0,
+      avgAmount: 0,
+      totalAmount: 0,
+    };
 
     const agreement = await Agreement.create(agreementData);
 
     const displayValue = dealType === 'asset' ? (estimatedValue || amount || 0) : amount;
+    const displayName = dealType === 'asset' ? (assetName || 'item') : `₹${displayValue}`;
 
-    // Update user stats + create notifications in parallel (fast DB ops)
-    await Promise.all([
-      User.findOneAndUpdate({ uid: lenderId }, { $inc: { totalLent: displayValue, agreementCount: 1 } }),
-      User.findOneAndUpdate({ uid: borrowerUser.uid }, { $inc: { totalBorrowed: displayValue, agreementCount: 1 } }),
-      Notification.create({
-        userId: lenderId,
-        type: 'agreement_created',
-        title: dealType === 'asset' ? 'Asset Agreement Created' : 'Agreement Created',
-        description: dealType === 'asset'
-          ? `You created an asset agreement with ${borrowerName} for ${assetName || 'item'}`
-          : `You created an agreement with ${borrowerName} for ₹${amount}`,
-        agreementId: agreement._id.toString(),
-      }),
-      Notification.create({
-        userId: borrowerUser.uid,
-        type: 'agreement_created',
-        title: dealType === 'asset' ? 'New Asset Agreement' : 'New Lending Agreement',
-        description: dealType === 'asset'
-          ? `${lenderName} created an asset agreement with you for ${assetName || 'item'}`
-          : `${lenderName} created a lending agreement with you for ₹${amount}`,
-        agreementId: agreement._id.toString(),
-      }),
-    ]);
+    // Update lender's stats
+    await User.findOneAndUpdate(
+      { uid: lenderId },
+      {
+        $inc: { totalLent: displayValue, agreementCount: 1 },
+      }
+    );
 
-    // Run slow independent operations in parallel: AI analysis, emails, push notification
-    const borrowerEmailTemplate = emailTemplates.agreementRequest(lenderName, borrowerName, displayValue, dueDate, agreement._id.toString());
-    const witnessEmailTemplate = witnessEmail && witnessName
-      ? emailTemplates.witnessApprovalRequest(lenderName, borrowerName, witnessName, agreement._id.toString())
-      : null;
+    // Update borrower's stats
+    await User.findOneAndUpdate(
+      { uid: borrowerUser.uid },
+      {
+        $inc: { totalBorrowed: displayValue, agreementCount: 1 },
+      }
+    );
 
-    const [aiResult] = await Promise.allSettled([
-      analyzeTrustScoreWithHistory(amount, borrowerName, borrowerUser.uid, borrowerEmail, purpose || 'Not specified', dueDate, lenderName, lenderId, lenderEmail),
-      sendEmail({ to: borrowerEmail, subject: borrowerEmailTemplate.subject, html: borrowerEmailTemplate.html }),
-      witnessEmailTemplate ? sendEmail({ to: witnessEmail, subject: witnessEmailTemplate.subject, html: witnessEmailTemplate.html }) : Promise.resolve(),
-      borrowerUser.fcmToken ? sendNotification(borrowerUser.fcmToken, "New Lending Agreement", `${lenderName} created a lending agreement with you for ₹${amount}`) : Promise.resolve(),
-    ]);
+    // Create notification for lender
+    await Notification.create({
+      userId: lenderId,
+      type: 'agreement_created',
+      title: dealType === 'asset' ? 'Asset Agreement Created' : 'Agreement Created',
+      description: dealType === 'asset'
+        ? `You created an asset agreement with ${borrowerName} for ${assetName || 'item'}`
+        : `You created an agreement with ${borrowerName} for ₹${amount}`,
+      agreementId: agreement._id.toString(),
+    });
 
-    // If AI analysis completed, update agreement with results
-    if (aiResult.status === 'fulfilled' && aiResult.value) {
-      console.log('[NEAR AI] Trust analysis result:', aiResult.value);
-      const analysis = aiResult.value;
-      await Agreement.findByIdAndUpdate(agreement._id, {
-        aiAnalysis: analysis,
-        borrowerCreditReport: analysis.borrowerCreditReport || { totalAgreements: 0, onTimeRate: 100, lateCount: 0, totalAmount: 0, avgAmount: 0 },
-        lenderCreditReport: analysis.lenderCreditReport || { totalAgreements: 0, avgAmount: 0, totalAmount: 0 },
+    // Create notification for borrower
+    await Notification.create({
+      userId: borrowerUser.uid,
+      type: 'agreement_created',
+      title: dealType === 'asset' ? 'New Asset Agreement' : 'New Lending Agreement',
+      description: dealType === 'asset'
+        ? `${lenderName} created an asset agreement with you for ${assetName || 'item'}`
+        : `${lenderName} created a lending agreement with you for ₹${amount}`,
+      agreementId: agreement._id.toString(),
+    });
+
+    // Send email to borrower
+    const borrowerEmailTemplate = emailTemplates.agreementRequest(
+      lenderName,
+      borrowerName,
+      displayValue,
+      dueDate,
+      agreement._id.toString()
+    );
+    await sendEmail({
+      to: borrowerEmail,
+      subject: borrowerEmailTemplate.subject,
+      html: borrowerEmailTemplate.html,
+    });
+
+    // Send email to witness if provided
+    if (witnessEmail && witnessName) {
+      const witnessEmailTemplate = emailTemplates.witnessApprovalRequest(
+        lenderName,
+        borrowerName,
+        witnessName,
+        agreement._id.toString()
+      );
+      await sendEmail({
+        to: witnessEmail,
+        subject: witnessEmailTemplate.subject,
+        html: witnessEmailTemplate.html,
       });
-    } else if (aiResult.status === 'rejected') {
-      console.error('[NEAR AI] Trust analysis failed:', aiResult.reason?.message);
+    }
+
+    // Send Push Notification to Borrower
+    if (borrowerUser.fcmToken) {
+      await sendNotification(
+        borrowerUser.fcmToken,
+        "New Lending Agreement",
+        `${lenderName} created a lending agreement with you for ₹${amount}`
+      );
     }
 
     return NextResponse.json(

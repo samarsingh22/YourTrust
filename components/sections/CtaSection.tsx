@@ -39,6 +39,7 @@ export default function CtaSection() {
               Get Started Free
             </BrutalistButton>
             </Link>
+            <Link href="https://github.com/samarsingh22/YourTrust" target="_blank" rel="noopener noreferrer">
             <BrutalistButton
               variant="outline"
               size="lg"
@@ -46,6 +47,7 @@ export default function CtaSection() {
             >
               View on GitHub
             </BrutalistButton>
+            </Link>
           </div>
 
           <p className="relative mt-8 font-sonko-medium text-[10px] uppercase tracking-[0.15em] text-[#F5E5B1]/50">
